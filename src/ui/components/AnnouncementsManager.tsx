@@ -33,7 +33,7 @@ import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import Stack from '@mui/material/Stack';
 
-import { get, del, formatApiError } from '@core/api/client';
+import { get, del, formatApiError, clearEtagCache } from '@core/api/client';
 import AdminEmptyState from '@ui/components/AdminEmptyState';
 import AnnouncementForm from './AnnouncementForm';
 import type { BaseRecord } from '@core/types/record';
@@ -60,6 +60,7 @@ export default function AnnouncementsManager() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => del('/collections/announcements', { data: { id } }),
     onSuccess: () => {
+      clearEtagCache('announcements');
       void qc.invalidateQueries({ queryKey: ['announcements'] });
       void qc.invalidateQueries({ queryKey: ['announcements-public'] });
       setDeleting(null);

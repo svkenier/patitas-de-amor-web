@@ -35,7 +35,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 dayjs.locale('es');
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { post, put, formatApiError } from '@core/api/client';
+import { post, put, formatApiError, clearEtagCache } from '@core/api/client';
 import { optimizeImage } from '@core/media/imageOptimizer';
 import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
 import type { BaseRecord } from '@core/types/record';
@@ -168,6 +168,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
       }
     },
     onSuccess: () => {
+      clearEtagCache('announcements');
       void qc.invalidateQueries({ queryKey: ['announcements'] });
       void qc.invalidateQueries({ queryKey: ['announcements-public'] });
       onClose();

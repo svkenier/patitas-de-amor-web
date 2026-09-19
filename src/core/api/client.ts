@@ -51,9 +51,16 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     // Inyectar ETag si existe en caché para peticiones GET
     if (config.method?.toLowerCase() === 'get' && config.url) {
-      const cached = etagCache.get(config.url);
-      if (cached && config.headers) {
-        config.headers['If-None-Match'] = cached.etag;
+      if (config.headers) {
+        // Anti-cache headers para evitar que el navegador sirva versiones obsoletas
+        config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+        config.headers['Pragma'] = 'no-cache';
+        config.headers['Expires'] = '0';
+        
+        const cached = etagCache.get(config.url);
+        if (cached) {
+          config.headers['If-None-Match'] = cached.etag;
+        }
       }
     }
 

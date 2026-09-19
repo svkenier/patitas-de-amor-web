@@ -26,7 +26,7 @@ import AddPhotoIcon  from '@mui/icons-material/AddPhotoAlternate';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { post, put, formatApiError } from '@core/api/client';
+import { post, put, formatApiError, clearEtagCache } from '@core/api/client';
 import { optimizeImage } from '@core/media/imageOptimizer';
 import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
 import type { BaseRecord } from '@core/types/record';
@@ -250,6 +250,7 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
       return post(`/collections/${collectionName}`, payload);
     },
     onSuccess: () => {
+      clearEtagCache(collectionName);
       void qc.invalidateQueries({ queryKey: [`${collectionName}-index`] });
       if (onSuccess) {
         onSuccess(isEdit);
