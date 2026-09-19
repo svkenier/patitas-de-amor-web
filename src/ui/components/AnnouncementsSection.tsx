@@ -74,6 +74,11 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        border: '1px solid #E7E5E4',
+        transition: 'transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        '&:active': {
+          transform: 'scale(0.98)',
+        },
       }}
     >
       <Box sx={{ position: 'relative' }}>
@@ -94,8 +99,8 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: `linear-gradient(135deg, ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}22 0%, ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}44 100%)`,
-              borderBottom: `3px solid ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}55`,
+              background: '#F5F5F4',
+              borderBottom: '1px solid #E7E5E4',
             }}
           >
             <Box
@@ -103,12 +108,10 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
                 width: 88,
                 height: 88,
                 borderRadius: '50%',
-                bgcolor: 'rgba(255,255,255,0.60)',
-                backdropFilter: 'blur(8px)',
+                bgcolor: 'rgba(0,0,0,0.03)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: `0 6px 24px ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}33`,
               }}
             >
               <CampaignRoundedIcon

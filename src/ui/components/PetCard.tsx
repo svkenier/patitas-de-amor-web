@@ -72,7 +72,10 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
         display:     'flex',
         flexDirection: 'column',
         opacity: isAdopted ? 0.72 : 1,
-        transition: 'opacity 250ms',
+        transition: 'transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 250ms',
+        '&:active': {
+          transform: 'scale(0.98)',
+        },
       }}
     >
       <CardActionArea
@@ -115,7 +118,8 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #E8F5E9 0%, #B2DFDB 100%)',
+                background: '#F5F5F4',
+                borderBottom: '1px solid #E7E5E4',
               }}
             >
               <Box
@@ -123,12 +127,10 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
                   width: 80,
                   height: 80,
                   borderRadius: '50%',
-                  bgcolor: 'rgba(255,255,255,0.55)',
-                  backdropFilter: 'blur(6px)',
+                  bgcolor: 'rgba(0,0,0,0.03)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 20px rgba(0,121,107,0.18)',
                 }}
               >
                 <PetsRoundedIcon sx={{ fontSize: 48, color: 'primary.main' }} />
@@ -142,14 +144,14 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
                   px: 1.5,
                   py: 0.4,
                   borderRadius: 4,
-                  bgcolor: 'rgba(255,255,255,0.72)',
-                  backdropFilter: 'blur(6px)',
+                  bgcolor: '#FFFFFF',
+                  border: '1px solid #E7E5E4',
                   fontSize: '0.68rem',
-                  fontWeight: 700,
-                  color: 'primary.dark',
+                  fontWeight: 600,
+                  color: 'text.secondary',
                   letterSpacing: '0.05em',
                   whiteSpace: 'nowrap',
-                  boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                 }}
               >
                 En adopción
