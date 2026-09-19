@@ -38,7 +38,7 @@ import { get, del, formatApiError, clearEtagCache } from '@core/api/client';
 import AdminEmptyState from '@ui/components/AdminEmptyState';
 import AnnouncementForm from './AnnouncementForm';
 import type { BaseRecord } from '@core/types/record';
-import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
+
 
 import { TYPE_COLORS, TYPE_LABELS } from '@core/utils/recordHelpers';
 

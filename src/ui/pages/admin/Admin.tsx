@@ -58,7 +58,7 @@ import { useAuth } from '@ui/context/AuthContext';
 import { get, del, formatApiError } from '@core/api/client';
 import { ROLE_LEVEL } from '@core/types/user';
 import type { BaseRecord, PaginatedRecords } from '@core/types/record';
-import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
+
 
 // ─── Pestañas ─────────────────────────────────────────────────────────────────
 
