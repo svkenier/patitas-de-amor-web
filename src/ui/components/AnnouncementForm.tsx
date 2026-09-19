@@ -63,7 +63,7 @@ const EMPTY = {
 const validationSchema = Yup.object({
   title: Yup.string().required('El título es obligatorio'),
   type: Yup.string().required('El tipo es obligatorio'),
-  description: Yup.string().required('La descripción es obligatoria'),
+  description: Yup.string(),
   date: Yup.string().when('type', {
     is: 'perdida',
     then: (schema) => schema.notRequired(),
@@ -349,7 +349,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
 
           <Grid size={{ xs: 12 }}>
             <TextField
-              label="Descripción *"
+              label="Descripción (Opcional)"
               name="description"
               value={formik.values.description}
               onChange={formik.handleChange}

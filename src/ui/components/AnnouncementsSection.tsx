@@ -176,7 +176,7 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
             color="text.secondary" 
             sx={!expanded ? { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : { whiteSpace: 'pre-line' }}
           >
-            {announcement.description}
+            {announcement.description || 'Sin descripción disponible'}
           </Typography>
           {isLong && (
             <Typography

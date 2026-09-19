@@ -38,6 +38,7 @@ import EditIcon      from '@mui/icons-material/Edit';
 import DeleteIcon    from '@mui/icons-material/Delete';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import PetsRoundedIcon from '@mui/icons-material/PetsRounded';
 import MenuIcon from '@mui/icons-material/Menu';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
@@ -255,16 +256,26 @@ export default function Admin() {
             ) : petsData?.records.map((pet) => (
               <Card key={pet.id} variant="outlined" sx={{ borderRadius: 0 }}>
                 <CardContent sx={{ display: 'flex', gap: 2, pb: 1 }}>
-                  <Box
-                    component="img"
-                    src={pet.main_image || ITEM_IMAGE_FALLBACK}
-                    alt={pet.title ? `Foto de ${pet.title}` : 'Foto'}
-                    width="80"
-                    height="80"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = ITEM_IMAGE_FALLBACK; }}
-                    sx={{ width: 80, height: 80, objectFit: 'cover' }}
-                  />
+                  {pet.main_image ? (
+                    <Box
+                      component="img"
+                      src={pet.main_image}
+                      alt={pet.title ? `Foto de ${pet.title}` : 'Foto'}
+                      width="80"
+                      height="80"
+                      loading="lazy"
+                      sx={{ width: 80, height: 80, objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <Box sx={{ 
+                      width: 80, height: 80, 
+                      bgcolor: '#F5F5F4', 
+                      border: '1px solid #E7E5E4',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                    }}>
+                      <PetsRoundedIcon sx={{ color: 'primary.main', opacity: 0.5, fontSize: 40 }} />
+                    </Box>
+                  )}
                   <Box sx={{ flexGrow: 1 }}>
                     <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
                       {pet.title} {pet.attributes?.destacado && '⭐'}
@@ -355,16 +366,26 @@ export default function Admin() {
                   : petsData?.records.map((pet) => (
                       <TableRow key={pet.id} hover>
                         <TableCell>
-                          <Box
-                            component="img"
-                            src={pet.main_image || ITEM_IMAGE_FALLBACK}
-                            alt={pet.title ? `Miniatura de ${pet.title}` : 'Miniatura'}
-                            width="40"
-                            height="40"
-                            loading="lazy"
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = ITEM_IMAGE_FALLBACK; }}
-                            sx={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover' }}
-                          />
+                          {pet.main_image ? (
+                            <Box
+                              component="img"
+                              src={pet.main_image}
+                              alt={pet.title ? `Miniatura de ${pet.title}` : 'Miniatura'}
+                              width="40"
+                              height="40"
+                              loading="lazy"
+                              sx={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <Box sx={{ 
+                              width: 40, height: 40, 
+                              bgcolor: '#F5F5F4', 
+                              border: '1px solid #E7E5E4',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                            }}>
+                              <PetsRoundedIcon sx={{ color: 'primary.main', opacity: 0.5, fontSize: 24 }} />
+                            </Box>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" fontWeight={600}>{pet.title}</Typography>

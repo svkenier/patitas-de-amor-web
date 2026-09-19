@@ -27,6 +27,7 @@ import DialogActions from '@mui/material/DialogActions';
 import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -115,13 +116,23 @@ export default function AnnouncementsManager() {
         ) : announcements?.map((a) => (
           <Card key={a.id} variant="outlined" sx={{ borderRadius: 0 }}>
             <CardContent sx={{ display: 'flex', gap: 2, pb: 1 }}>
-              <Box
-                component="img"
-                src={a.main_image || ITEM_IMAGE_FALLBACK}
-                alt={a.title ? `Imagen de ${a.title}` : 'Imagen del anuncio'}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = ITEM_IMAGE_FALLBACK; }}
-                sx={{ width: 80, height: 80, objectFit: 'cover' }}
-              />
+              {a.main_image ? (
+                <Box
+                  component="img"
+                  src={a.main_image}
+                  alt={a.title ? `Imagen de ${a.title}` : 'Imagen del anuncio'}
+                  sx={{ width: 80, height: 80, objectFit: 'cover' }}
+                />
+              ) : (
+                <Box sx={{ 
+                  width: 80, height: 80, 
+                  bgcolor: '#F5F5F4', 
+                  border: '1px solid #E7E5E4',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                }}>
+                  <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a.type] || 'primary.main', opacity: 0.5, fontSize: 40 }} />
+                </Box>
+              )}
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="h6" fontWeight={700} lineHeight={1.2} mb={0.5}>
                   {a.title}
@@ -202,13 +213,23 @@ export default function AnnouncementsManager() {
               : announcements?.map((a) => (
                   <TableRow key={a.id} hover>
                     <TableCell>
-                      <Box
-                        component="img"
-                        src={a.main_image || ITEM_IMAGE_FALLBACK}
-                        alt={a.title ? `Imagen miniatura de ${a.title}` : 'Imagen del anuncio'}
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = ITEM_IMAGE_FALLBACK; }}
-                        sx={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover' }}
-                      />
+                      {a.main_image ? (
+                        <Box
+                          component="img"
+                          src={a.main_image}
+                          alt={a.title ? `Imagen miniatura de ${a.title}` : 'Imagen del anuncio'}
+                          sx={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Box sx={{ 
+                          width: 40, height: 40, 
+                          bgcolor: '#F5F5F4', 
+                          border: '1px solid #E7E5E4',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                        }}>
+                          <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a.type] || 'primary.main', opacity: 0.5, fontSize: 24 }} />
+                        </Box>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight={600}>{a.title}</Typography>
