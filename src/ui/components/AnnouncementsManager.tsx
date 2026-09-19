@@ -130,14 +130,14 @@ export default function AnnouncementsManager() {
                   border: '1px solid #E7E5E4',
                   display: 'flex', alignItems: 'center', justifyContent: 'center' 
                 }}>
-                  <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a.type] || 'primary.main', opacity: 0.5, fontSize: 40 }} />
+                  <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: 0.5, fontSize: 40 }} />
                 </Box>
               )}
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="h6" fontWeight={700} lineHeight={1.2} mb={0.5}>
                   {a.title}
                 </Typography>
-                <Chip label={(TYPE_LABELS[a.type] || 'Otro').toUpperCase()} size="small" variant="outlined" sx={{ mb: 1, backgroundColor: 'transparent', color: TYPE_COLORS[a.type] || '#71717A', borderColor: TYPE_COLORS[a.type] || '#71717A', fontWeight: 600 }} />
+                <Chip label={(TYPE_LABELS[a?.type as keyof typeof TYPE_LABELS] || 'Otro').toUpperCase()} size="small" variant="outlined" sx={{ mb: 1, backgroundColor: 'transparent', color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', borderColor: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', fontWeight: 600 }} />
                 <Typography variant="body2" color="text.secondary" display="block">
                   {a.attributes?.date as string} {a.attributes?.time && `• ${a.attributes.time}`}
                 </Typography>
@@ -227,7 +227,7 @@ export default function AnnouncementsManager() {
                           border: '1px solid #E7E5E4',
                           display: 'flex', alignItems: 'center', justifyContent: 'center' 
                         }}>
-                          <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a.type] || 'primary.main', opacity: 0.5, fontSize: 24 }} />
+                          <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: 0.5, fontSize: 24 }} />
                         </Box>
                       )}
                     </TableCell>
@@ -235,7 +235,7 @@ export default function AnnouncementsManager() {
                       <Typography variant="body2" fontWeight={600}>{a.title}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip label={(TYPE_LABELS[a.type] || 'Otro').toUpperCase()} size="small" variant="outlined" sx={{ backgroundColor: 'transparent', color: TYPE_COLORS[a.type] || '#71717A', borderColor: TYPE_COLORS[a.type] || '#71717A', fontWeight: 600 }} />
+                      <Chip label={(TYPE_LABELS[a?.type as keyof typeof TYPE_LABELS] || 'Otro').toUpperCase()} size="small" variant="outlined" sx={{ backgroundColor: 'transparent', color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', borderColor: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', fontWeight: 600 }} />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">{a.attributes?.date as string}</Typography>
