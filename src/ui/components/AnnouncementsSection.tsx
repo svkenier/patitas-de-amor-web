@@ -32,7 +32,6 @@ import { get, formatApiError } from '@core/api/client';
 import AnimatedSection from '@ui/components/AnimatedSection';
 import EmptyState      from '@ui/components/EmptyState';
 import type { BaseRecord } from '@core/types/record';
-import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
 import { DEFAULT_SETTINGS, type Settings } from '@core/types/settings';
 
 import { TYPE_COLORS, TYPE_TEXT_COLORS, TYPE_LABELS } from '@core/utils/recordHelpers';
