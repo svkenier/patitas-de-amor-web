@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://patitasdeamor.org/sitemap.xml

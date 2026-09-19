@@ -1,0 +1,1 @@
+{"root":["./_middleware.ts","./api/settings.ts","./api/auth/[action].ts","./api/collections/[collection].ts","./api/public/[collection].ts","./api/users/[action].ts"],"version":"5.8.3"}

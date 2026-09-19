@@ -1,0 +1,21 @@
+{
+  "name": "Patitas de Amor - Refugio y Adopción",
+  "short_name": "Patitas de Amor",
+  "description": "Plataforma de adopción y rescate animal de Patitas de Amor.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#65C620",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.webp",
+      "sizes": "192x192 512x512",
+      "type": "image/webp"
+    }
+  ]
+}

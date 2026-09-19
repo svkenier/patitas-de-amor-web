@@ -1,0 +1,62 @@
+{
+  "name": "petrescue",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wrangler pages dev public --port 8788 --compatibility-flags=nodejs_compat\"",
+    "prebuild": "tsx scripts/seed.ts",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "preview:pages": "wrangler pages dev ./dist --compatibility-flags=nodejs_compat",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.4.8",
+    "@mui/material": "^6.4.8",
+    "@mui/x-date-pickers": "^7.29.4",
+    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-query-devtools": "^5.83.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.3",
+    "axios": "^1.9.0",
+    "bcryptjs": "^3.0.3",
+    "dayjs": "^1.11.23",
+    "embla-carousel-react": "^8.6.0",
+    "formik": "^2.4.9",
+    "jsonwebtoken": "^9.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-helmet-async": "^3.0.0",
+    "react-router-dom": "^7.7.0",
+    "yup": "^1.7.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260914.1",
+    "@playwright/test": "^1.62.1",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.13.3",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.5.1",
+    "concurrently": "^10.0.5",
+    "dotenv": "^17.4.2",
+    "oxlint": "^1.79.0",
+    "tsx": "^4.23.13",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "wrangler": "^3.0.0"
+  },
+  "overrides": {
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7"
+  }
+}

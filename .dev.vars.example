@@ -1,0 +1,47 @@
+# ==============================================================================
+# ☁️ CLOUDFLARE PAGES - CONFIGURACIÓN DE ENTORNO
+# ==============================================================================
+# 📌 CÓMO USAR ESTE ARCHIVO:
+# 
+# 1. DESARROLLO LOCAL:
+#    - Copia este archivo y renómbralo a `.dev.vars`.
+#    - Rellena los valores reales en el archivo `.dev.vars`.
+#    - Wrangler leerá automáticamente el archivo `.dev.vars` para el entorno local de Functions.
+#
+# 2. DESPLIEGUE EN PRODUCCIÓN (Cloudflare Pages):
+#    - NO subas tu `.env` con los valores reales al repositorio.
+#    - Ve al Dashboard de Cloudflare: Pages > Tu Proyecto > Settings > Environment variables.
+#    - Configura cada variable según el tipo indicado abajo:
+#      🟢 [Plain text]: Añádela como variable de texto normal.
+#      🔴 [SECRET]: Añádela y haz clic en "Encrypt" para ocultar su valor.
+# ==============================================================================
+
+# ==========================================
+# Configuración de GitHub
+# ==========================================
+# 🟢 [Cloudflare: Plain text] - Nombre de usuario u organización dueña del repo
+GITHUB_OWNER=""
+# 🟢 [Cloudflare: Plain text] - Nombre del repositorio
+GITHUB_REPO=""
+# 🟢 [Cloudflare: Plain text] - Rama principal a utilizar (ej. main)
+GITHUB_BRANCH=""
+# 🔴 [Cloudflare: SECRET / Encrypt] - Token personal de acceso (Classic o Fine-grained)
+GITHUB_TOKEN=""
+
+# ==========================================
+# Configuración de Redis / Upstash
+# ==========================================
+# 🟢 [Cloudflare: Plain text] - URL REST proporcionada por Upstash
+UPSTASH_REDIS_REST_URL=""
+# 🔴 [Cloudflare: SECRET / Encrypt] - Token REST proporcionado por Upstash
+UPSTASH_REDIS_REST_TOKEN=""
+
+# ==========================================
+# Credenciales de Administración y Autenticación
+# ==========================================
+# 🟢 [Cloudflare: Plain text] - Usuario para el panel de administración
+ADMIN_USER=""
+# 🔴 [Cloudflare: SECRET / Encrypt] - Contraseña para el panel de administración
+ADMIN_PASSWORD=""
+# 🔴 [Cloudflare: SECRET / Encrypt] - Cadena alfanumérica aleatoria (mínimo 32 caracteres) para firmar JWT
+JWT_SECRET=""
