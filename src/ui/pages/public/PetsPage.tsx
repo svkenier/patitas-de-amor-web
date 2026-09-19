@@ -53,7 +53,7 @@ export default function PetsPage() {
   const { data, isLoading, isError, error, refetch } = useQuery<{ records: BaseRecord[]; total: number }>({
     queryKey: ['pets-index'],
     queryFn: async () => {
-      const res = await get<BaseRecord[]>('/public/pets');
+      const res = await get<BaseRecord[]>(`/public/pets?t=${Date.now()}`);
       return { 
         records: res || [], 
         total: (res || []).length 

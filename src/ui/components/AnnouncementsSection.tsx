@@ -234,7 +234,7 @@ export default function AnnouncementsSection() {
   const { data: announcements, isLoading, isError, error } = useQuery<BaseRecord[]>({
     queryKey: ['announcements-public'],
     queryFn: async () => {
-      const data = await get<any>('/public/announcements');
+      const data = await get<any>(`/public/announcements?t=${Date.now()}`);
       return Array.isArray(data) ? data : (data?.announcements || []);
     },
     staleTime: 0,
