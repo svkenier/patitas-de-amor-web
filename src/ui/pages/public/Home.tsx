@@ -116,11 +116,13 @@ export default function Home() {
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
 
   const onInit = useCallback((emblaApi: any) => {
-    setScrollSnaps(emblaApi.scrollSnapList());
+    if (!emblaApi) return;
+    setScrollSnaps(emblaApi?.scrollSnapList?.() ?? []);
   }, []);
 
   const onSelect = useCallback((emblaApi: any) => {
-    setSelectedIndex(emblaApi.selectedScrollSnap());
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi?.selectedScrollSnap?.() ?? 0);
   }, []);
 
   useEffect(() => {
@@ -184,7 +186,7 @@ export default function Home() {
           <img
             src="/hero-mobile.webp"
             alt="Perros y gatos rescatados por Patitas de Amor Barquisimeto"
-            fetchPriority="high"
+            fetchpriority="high"
             loading="eager"
             width="800"
             height="1200"
