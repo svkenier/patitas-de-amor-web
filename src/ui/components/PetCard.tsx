@@ -12,7 +12,7 @@ import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
 import MaleIcon       from '@mui/icons-material/Male';
 import FemaleIcon     from '@mui/icons-material/Female';
-import PetsIcon       from '@mui/icons-material/Pets';
+import PetsRoundedIcon from '@mui/icons-material/PetsRounded';
 import type { BaseRecord } from '@core/types/record';
 import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
 
@@ -112,12 +112,48 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
                 width: '100%',
                 height: '100%',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: 'grey.100',
+                background: 'linear-gradient(135deg, #E8F5E9 0%, #B2DFDB 100%)',
               }}
             >
-              <PetsIcon sx={{ fontSize: 64, color: 'text.disabled', opacity: 0.5 }} />
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.55)',
+                  backdropFilter: 'blur(6px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 20px rgba(0,121,107,0.18)',
+                }}
+              >
+                <PetsRoundedIcon sx={{ fontSize: 48, color: 'primary.main' }} />
+              </Box>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 10,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  px: 1.5,
+                  py: 0.4,
+                  borderRadius: 4,
+                  bgcolor: 'rgba(255,255,255,0.72)',
+                  backdropFilter: 'blur(6px)',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  color: 'primary.dark',
+                  letterSpacing: '0.05em',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
+                }}
+              >
+                En adopción
+              </Box>
             </Box>
           )}
           <Box
@@ -197,7 +233,7 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, mb: 1 }}>
               {especie && (
                 <Chip
-                  icon={<PetsIcon sx={{ fontSize: '0.9rem !important' }} />}
+                  icon={<PetsRoundedIcon sx={{ fontSize: '0.9rem !important' }} />}
                   label={SPECIES_LABEL[especie] ?? especie}
                   size="small"
                   variant="outlined"

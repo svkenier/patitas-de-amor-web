@@ -21,6 +21,7 @@ import AccessTimeIcon    from '@mui/icons-material/AccessTime';
 import LocationOnIcon    from '@mui/icons-material/LocationOn';
 import WhatsAppIcon      from '@mui/icons-material/WhatsApp';
 import CampaignIcon      from '@mui/icons-material/Campaign';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import ErrorOutlineIcon  from '@mui/icons-material/ErrorOutline';
 import ChevronLeftIcon   from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon  from '@mui/icons-material/ChevronRight';
@@ -77,14 +78,49 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
       }}
     >
       <Box sx={{ position: 'relative' }}>
-        <CardMedia
-          component="img"
-          loading="lazy"
-          height="220"
-          image={announcement.main_image || ITEM_IMAGE_FALLBACK}
-          alt={announcement.title ? `Imagen de ${announcement.title}` : 'Imagen del anuncio'}
-          sx={{ objectFit: 'cover' }}
-        />
+        {announcement.main_image ? (
+          <CardMedia
+            component="img"
+            loading="lazy"
+            height="220"
+            image={announcement.main_image}
+            alt={announcement.title ? `Imagen de ${announcement.title}` : 'Imagen del anuncio'}
+            sx={{ objectFit: 'cover' }}
+          />
+        ) : (
+          <Box
+            sx={{
+              height: 220,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: `linear-gradient(135deg, ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}22 0%, ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}44 100%)`,
+              borderBottom: `3px solid ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}55`,
+            }}
+          >
+            <Box
+              sx={{
+                width: 88,
+                height: 88,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.60)',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 6px 24px ${TYPE_COLORS[announcement.type] ?? '#7C3AED'}33`,
+              }}
+            >
+              <CampaignRoundedIcon
+                sx={{
+                  fontSize: 52,
+                  color: TYPE_COLORS[announcement.type] ?? '#7C3AED',
+                }}
+              />
+            </Box>
+          </Box>
+        )}
         <Chip
           label={TYPE_LABELS[announcement.type] || 'Evento'}
           size="small"
