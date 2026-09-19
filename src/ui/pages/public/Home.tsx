@@ -68,8 +68,8 @@ export default function Home() {
   const { data, isLoading, isError, error } = useQuery<PaginatedRecords>({
     queryKey: ['pets-index'],
     queryFn: async () => {
-      const res = await get<{ records: BaseRecord[] }>(`/public/pets?t=${Date.now()}`);
-      const records = res.records ?? [];
+      const res = await get<BaseRecord[] | { records: BaseRecord[] }>(`/public/pets?t=${Date.now()}`);
+      const records = Array.isArray(res) ? res : (res?.records ?? []);
       return { 
         records: records, 
         page: 1,
