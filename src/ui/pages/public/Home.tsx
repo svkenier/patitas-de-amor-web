@@ -149,7 +149,7 @@ export default function Home() {
           position: 'relative',
           minHeight: { xs: '75vh', md: '80vh' },
           display: 'flex',
-          alignItems: 'center',
+          alignItems: { xs: 'flex-start', md: 'center' },
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -158,8 +158,8 @@ export default function Home() {
             width: '100%',
             height: '100%',
             background: {
-              xs: 'linear-gradient(90deg, rgba(13, 34, 53, 0.95) 0%, rgba(13, 34, 53, 0.70) 50%, rgba(13, 34, 53, 0) 100%)',
-              md: 'linear-gradient(135deg, rgba(13, 34, 53, 0.90) 0%, rgba(13, 34, 53, 0.65) 50%, rgba(13, 34, 53, 0.40) 100%)'
+              xs: 'linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.70) 50%, rgba(15, 23, 42, 0.10) 75%, transparent 100%)',
+              md: 'linear-gradient(90deg, rgba(15, 23, 42, 0.90) 0%, rgba(15, 23, 42, 0.65) 45%, rgba(15, 23, 42, 0.15) 75%, transparent 100%)'
             },
             zIndex: 1,
           },
@@ -178,32 +178,41 @@ export default function Home() {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: { xs: 'right bottom', md: 'center right' }
+              objectPosition: { xs: 'center 36%', md: 'right 77%' }
             }
           }}
         >
-          <source media="(min-width: 900px)" srcSet="/hero-desktop.webp" width="1920" height="1080" />
+          <source media="(min-width: 900px)" srcSet="/hero-desktop.webp?v=15" width="1920" height="1080" />
           <img
-            src="/hero-mobile.webp"
+            src="/hero-mobile.webp?v=15"
             alt="Perros y gatos rescatados por Patitas de Amor Barquisimeto"
             {...({ fetchpriority: "high" } as any)}
             loading="eager"
+            decoding="async"
             width="800"
             height="1200"
           />
         </Box>
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
-          <Box sx={{ maxWidth: { xs: '75%', sm: '65%', md: '750px' } }}>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, pt: { xs: 6, sm: 8, md: 0 } }}>
+          <Box sx={{ maxWidth: { xs: '80%', sm: '70%', md: '500px' } }}>
             <AnimatedSection>
               <Chip
                 label="Rescate · Rehabilitación · Adopción · Barquisimeto"
                 sx={{
                   mb: 3,
-                  bgcolor: 'rgba(255,255,255,0.1)',
-                  color: 'primary.light',
-                  border: (theme) => `1px solid ${theme.palette.primary.light}`,
+                  height: 'auto',
+                  '& .MuiChip-label': {
+                    px: 2.5,
+                    py: 0.8,
+                  },
+                  bgcolor: 'rgba(53, 180, 221, 0.22)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(53, 180, 221, 0.50)',
                   fontWeight: 600,
-                  backdropFilter: 'blur(4px)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: '9999px',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
               />
             </AnimatedSection>
@@ -243,10 +252,13 @@ export default function Home() {
                   size="large"
                   endIcon={<ArrowForwardIcon />}
                   sx={{
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
+                    bgcolor: '#0f4c81', // Azul Marino / Cobalto
+                    color: '#FFFFFF',
                     fontWeight: 700,
-                    '&:hover': { bgcolor: 'primary.dark' },
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    '&:hover': {
+                      bgcolor: '#0a3d6b'
+                    }
                   }}
                 >
                   Ver mascotas
@@ -257,12 +269,12 @@ export default function Home() {
                   variant="outlined"
                   size="large"
                   sx={{
-                    color: 'primary.light',
-                    borderColor: 'primary.light',
+                    color: '#FFFFFF',
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
                     fontWeight: 600,
                     '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.light, 0.1),
-                      borderColor: 'primary.light',
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                      borderColor: '#FFFFFF',
                     },
                   }}
                 >
@@ -279,11 +291,11 @@ export default function Home() {
 
       {/* ── Mascotas en busca de hogar ───────────────────────────────────────── */}
 
-      <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'background.default', contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' }}>
+      <Box component="section" sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid rgba(30, 31, 32, 0.06)', contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' }}>
         <Container maxWidth="lg">
           <AnimatedSection>
             <Box sx={{ textAlign: 'center', mb: 5 }}>
-              <Typography variant="overline" color="primary" fontWeight={700} letterSpacing="0.12em">
+              <Typography variant="overline" color="#0f4c81" fontWeight={700} letterSpacing="0.12em">
                 Adopción responsable
               </Typography>
               <Typography variant="h2" fontWeight={700} mt={0.5} mb={1.5}>
@@ -322,14 +334,12 @@ export default function Home() {
                   </IconButton>
                 )}
 
-                <Box sx={{ overflow: 'hidden' }} ref={emblaRef}>
+                <Box sx={{ overflow: 'hidden', p: { xs: 2, sm: 3 }, m: { xs: -2, sm: -3 } }} ref={emblaRef}>
                   <Box 
                     sx={{ 
                       display: 'flex', 
                       touchAction: 'pan-y', 
-                      ml: loopActive ? { xs: 0, sm: -2, md: -3 } : 0,
-                      justifyContent: loopActive ? 'flex-start' : 'center',
-                      gap: loopActive ? 0 : { xs: 2, sm: 3 }
+                      ml: { xs: -2, sm: -3 },
                     }}
                   >
                     {isLoading
@@ -337,7 +347,7 @@ export default function Home() {
                           <Box key={i} sx={{ 
                             flex: '0 0 auto', 
                             minWidth: 0, 
-                            pl: loopActive ? { xs: 0, sm: 2, md: 3 } : 0, 
+                            pl: { xs: 2, sm: 3 }, 
                             width: { xs: '100%', sm: '50%', md: '33.3333%' } 
                           }}>
                             <Box sx={{ maxWidth: { xs: '92%', sm: 'none' }, mx: 'auto', height: '100%' }}>
@@ -349,7 +359,7 @@ export default function Home() {
                           <Box key={pet?.id || i} sx={{ 
                             flex: '0 0 auto', 
                             minWidth: 0, 
-                            pl: loopActive ? { xs: 0, sm: 2, md: 3 } : 0, 
+                            pl: { xs: 2, sm: 3 }, 
                             width: { xs: '100%', sm: '50%', md: '33.3333%' } 
                           }}>
                             <AnimatedSection delay={i * 60} sx={{ height: '100%' }}>
@@ -426,11 +436,11 @@ export default function Home() {
       </Box>
 
       {/* ── Cómo funciona ────────────────────────────────────────────────────── */}
-      <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#F8FAFC' }}>
+      <Box component="section" sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid rgba(30, 31, 32, 0.06)' }}>
         <Container maxWidth="lg">
           <AnimatedSection>
             <Box sx={{ textAlign: 'center', mb: 6 }}>
-              <Typography variant="overline" color="secondary" fontWeight={700} letterSpacing="0.12em">
+              <Typography variant="overline" color="#0f4c81" fontWeight={700} letterSpacing="0.12em">
                 El proceso
               </Typography>
               <Typography variant="h2" fontWeight={700} mt={0.5}>
@@ -447,9 +457,9 @@ export default function Home() {
                     sx={{
                       textAlign: 'center',
                       p:         3,
-                      bgcolor:   'background.paper',
-                      border:    '1px solid',
-                      borderColor: 'divider',
+                      bgcolor:   '#FFFFFF',
+                      borderRadius: 4, // 16px
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
                       height:    '100%',
                       position:  'relative',
                     }}
@@ -468,22 +478,23 @@ export default function Home() {
                     >
                       {step.icon}
                     </Box>
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top:      16,
-                        left:     16,
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                        top:      -14,
+                        left:     24,
                         width:    28,
                         height:   28,
-                        bgcolor:  'primary.main',
-                        color:    'white',
+                        borderRadius: '50%',
+                        bgcolor:  'rgba(53, 180, 221, 0.15)', // Cian suave
+                        color:    'primary.main', // Azul nítido
                         display:  'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '0.75rem',
                         fontWeight: 700,
-                      }}
-                    >
+                        }}
+                      >
                       {i + 1}
                     </Box>
                     <Typography variant="h6" component="h3" fontWeight={700} gutterBottom>
@@ -501,11 +512,11 @@ export default function Home() {
       </Box>
 
       {/* ── Contacto / WhatsApp ────────────────────────────────────────────── */}
-      <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'background.default' }}>
+      <Box component="section" sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid rgba(30, 31, 32, 0.06)' }}>
         <Container maxWidth="lg">
           <AnimatedSection>
             <Box sx={{ textAlign: 'center', mb: 5 }}>
-              <Typography variant="overline" color="primary" fontWeight={700} letterSpacing="0.12em">
+              <Typography variant="overline" color="#0f4c81" fontWeight={700} letterSpacing="0.12em">
                 Contáctanos
               </Typography>
               <Typography variant="h2" fontWeight={700} mt={0.5} mb={1.5}>

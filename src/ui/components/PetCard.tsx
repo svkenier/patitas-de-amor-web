@@ -19,7 +19,7 @@ import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
 // ─── Configuración de chips de estado ────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; textColor: string }> = {
-  disponible: { label: 'Disponible', color: '#E8F5E9', textColor: '#2E7D32' },
+  disponible: { label: 'Disponible', color: '#BAFE93', textColor: '#1E1F20' }, // Mint Green
   en_proceso: { label: 'En proceso', color: '#FFF8E1', textColor: '#F57F17' },
   adoptado:   { label: 'Adoptado',   color: '#F3F4F6', textColor: '#6B7280' },
   active:     { label: 'Activo',     color: '#E8F5E9', textColor: '#2E7D32' },
@@ -161,8 +161,8 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
           <Box
             sx={{
               position:    'absolute',
-              top:          10,
-              right:        10,
+              top:          16,
+              right:        16,
               px:           1.2,
               py:           0.4,
               bgcolor:      status.color,
@@ -179,8 +179,8 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
             <Box
               sx={{
                 position:    'absolute',
-                top:          10,
-                left:         10,
+                top:          16,
+                left:         16,
                 px:           1.2,
                 py:           0.4,
                 bgcolor:      'warning.main',
@@ -197,8 +197,8 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
             <Box
               sx={{
                 position:    'absolute',
-                top:          10,
-                left:         10,
+                top:          16,
+                left:         16,
                 px:           1.2,
                 py:           0.4,
                 bgcolor:      'warning.main',
@@ -298,11 +298,11 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
       <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
         <Button
           fullWidth
-          variant="contained"
-          color="primary"
+          variant="outlined"
           size="small"
           disabled={isAdopted}
           onClick={() => navigate(`${baseRoute}/${pet.id}`)}
+          sx={{ fontWeight: 600 }}
         >
           {isAdopted ? 'No disponible' : 'Conocer más'}
         </Button>

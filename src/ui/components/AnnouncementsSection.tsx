@@ -200,15 +200,15 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
       </CardContent>
       <CardActions sx={{ p: 2, pt: 0, mt: 'auto' }}>
         <Button
-          variant="contained"
-          color="primary"
+          variant="outlined"
           fullWidth
-          startIcon={<WhatsAppIcon />}
+          startIcon={<WhatsAppIcon sx={{ fontSize: '1.1rem !important', opacity: 0.8 }} />}
           href={waUrl}
           disabled={!whatsappNumber}
           aria-label={`Más Información sobre ${announcement.title}`}
+          sx={{ fontWeight: 600 }}
         >
-          <Typography component="span" sx={{ color: 'primary.contrastText', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit' }}>
+          <Typography component="span" sx={{ fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit' }}>
             Más Información 
             <Box component="span" sx={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', border: 0 }}>
               sobre {announcement.title}
@@ -288,11 +288,11 @@ export default function AnnouncementsSection() {
   const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
 
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'background.default', contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' }}>
+    <Box component="section" sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid rgba(30, 31, 32, 0.06)', contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' }}>
       <Container maxWidth="lg">
         <AnimatedSection>
           <Box sx={{ textAlign: 'center', mb: 5 }}>
-            <Typography variant="overline" color="primary" fontWeight={700} letterSpacing="0.12em">
+            <Typography variant="overline" color="#0f4c81" fontWeight={700} letterSpacing="0.12em">
               Próximos Eventos y Jornadas
             </Typography>
             <Typography variant="h3" component="h2" fontWeight={700} mt={0.5} mb={1.5}>
@@ -337,14 +337,12 @@ export default function AnnouncementsSection() {
                   </IconButton>
                 )}
                 
-                <Box sx={{ overflow: 'hidden' }} ref={emblaRef}>
+                <Box sx={{ overflow: 'hidden', p: { xs: 2, sm: 3 }, m: { xs: -2, sm: -3 } }} ref={emblaRef}>
                   <Box 
                     sx={{ 
                       display: 'flex', 
                       touchAction: 'pan-y', 
-                      ml: loopActive ? { xs: 0, sm: -2, md: -3 } : 0,
-                      justifyContent: loopActive ? 'flex-start' : 'center',
-                      gap: loopActive ? 0 : { xs: 2, sm: 3 }
+                      ml: { xs: -2, sm: -3 },
                     }}
                   >
                     {isLoading
@@ -352,7 +350,7 @@ export default function AnnouncementsSection() {
                           <Box key={i} sx={{ 
                             flex: '0 0 auto', 
                             minWidth: 0, 
-                            pl: loopActive ? { xs: 0, sm: 2, md: 3 } : 0, 
+                            pl: { xs: 2, sm: 3 }, 
                             width: { xs: '100%', sm: '50%', md: '33.3333%' } 
                           }}>
                             <Box sx={{ maxWidth: { xs: '92%', sm: 'none' }, mx: 'auto', height: '100%' }}>
@@ -371,7 +369,7 @@ export default function AnnouncementsSection() {
                           <Box key={announcement?.id || i} sx={{ 
                             flex: '0 0 auto', 
                             minWidth: 0, 
-                            pl: loopActive ? { xs: 0, sm: 2, md: 3 } : 0, 
+                            pl: { xs: 2, sm: 3 }, 
                             width: { xs: '100%', sm: '50%', md: '33.3333%' } 
                           }}>
                             <AnimatedSection delay={i * 100} sx={{ height: '100%' }}>

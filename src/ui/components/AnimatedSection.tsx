@@ -50,7 +50,7 @@ export default function AnimatedSection({
   direction = 'up',
   delay     = 0,
   threshold = 0.12,
-  distance  = 28,
+  distance  = 16,
   sx,
 }: AnimatedSectionProps) {
   const ref        = useRef<HTMLDivElement>(null);
@@ -91,8 +91,13 @@ export default function AnimatedSection({
       sx={{
         opacity:    visible ? 1 : 0,
         transform:  visible ? 'translate(0, 0)' : translateHidden,
-        transition: `opacity 500ms ease ${delay}ms, transform 500ms ease ${delay}ms`,
+        transition: `opacity 400ms ease-out ${delay}ms, transform 400ms ease-out ${delay}ms`,
         willChange: finished ? 'auto' : 'opacity, transform',
+        '@media (prefers-reduced-motion: reduce)': {
+          transition: 'none !important',
+          transform: 'translate(0, 0) !important',
+          opacity: '1 !important',
+        },
         ...sx,
       }}
     >

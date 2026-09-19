@@ -21,7 +21,6 @@ import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
 import HandshakeOutlinedIcon from '@mui/icons-material/HandshakeOutlined';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { useTheme, alpha } from '@mui/material/styles';
 import { 
   getEmergencyUrl, 
   getDonationUrl, 
@@ -38,7 +37,6 @@ interface ContactSectionProps {
 }
 
 export default function ContactSection({ sx }: ContactSectionProps) {
-  const theme = useTheme();
   const { data: settings, isLoading } = useQuery<Settings>({
     queryKey: ['settings'],
     queryFn: async () => {
@@ -57,8 +55,8 @@ export default function ContactSection({ sx }: ContactSectionProps) {
       title:    'Quiero adoptar',
       subtitle: 'Iniciemos el proceso de adopción juntos. Te guiamos paso a paso.',
       action:   'Escribir al refugio',
-      iconBg:   alpha(theme.palette.primary.main, 0.12),
-      iconColor: 'primary.main',
+      iconBg:   'rgba(186, 254, 147, 0.25)', // Verde Menta suave
+      iconColor: '#1E1F20',
       getUrl:   () => getGenericInfoUrl(phone),
     },
     {
@@ -66,8 +64,8 @@ export default function ContactSection({ sx }: ContactSectionProps) {
       title:    'Reportar rescate',
       subtitle: 'Encontraste un animal en peligro o en situación de calle. Avísanos.',
       action:   'Reportar ahora',
-      iconBg:   alpha(theme.palette.secondary.main, 0.12),
-      iconColor: 'secondary.dark',
+      iconBg:   'rgba(255, 175, 43, 0.20)', // Ámbar cálido suave
+      iconColor: '#1E1F20',
       getUrl:   () => getEmergencyUrl(phone),
     },
     {
@@ -75,8 +73,8 @@ export default function ContactSection({ sx }: ContactSectionProps) {
       title:    'Donar / Apadrinar',
       subtitle: 'Tu apoyo económico o en especie ayuda a mantener el refugio activo.',
       action:   'Quiero ayudar',
-      iconBg:   alpha(theme.palette.primary.main, 0.12),
-      iconColor: 'primary.main',
+      iconBg:   'rgba(53, 180, 221, 0.20)', // Cian suave
+      iconColor: '#1E1F20',
       getUrl:   () => getDonationUrl(phone),
     },
     {
@@ -84,8 +82,8 @@ export default function ContactSection({ sx }: ContactSectionProps) {
       title:    'Voluntariado',
       subtitle: 'Únete a nuestro equipo y ayúdanos a salvar más vidas en el refugio.',
       action:   'Ser voluntario',
-      iconBg:   alpha(theme.palette.secondary.main, 0.12),
-      iconColor: 'secondary.dark',
+      iconBg:   'rgba(30, 31, 32, 0.08)', // Carbón neutro suave
+      iconColor: '#1E1F20',
       getUrl:   () => getVolunteerUrl(phone),
     },
   ];
@@ -114,9 +112,6 @@ export default function ContactSection({ sx }: ContactSectionProps) {
                   height:      '100%',
                   display:     'flex',
                   flexDirection: 'column',
-                  // Verde Patitas de Amor
-                  borderTop: 4,
-                  borderColor: 'primary.main',
                 }}
               >
               <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', textAlign: 'center', alignItems: 'center', px: 3, py: 3 }}>
@@ -129,6 +124,7 @@ export default function ContactSection({ sx }: ContactSectionProps) {
                     justifyContent: 'center',
                     bgcolor: ch.iconBg,
                     color: ch.iconColor,
+                    borderRadius: '50%', // Círculos
                     mb: 2,
                   }}
                 >
@@ -142,11 +138,21 @@ export default function ContactSection({ sx }: ContactSectionProps) {
                 </Typography>
                 <Button
                   fullWidth
-                  variant="contained"
-                  color="primary"
+                  variant="outlined"
                   onClick={() => openWhatsApp(ch.getUrl())}
                   sx={{
-                    mt:          'auto', // Push to bottom
+                    mt: 'auto',
+                    bgcolor: '#F1F5F9',
+                    borderColor: 'rgba(0,0,0,0.08)',
+                    color: '#1E1F20',
+                    fontWeight: 600,
+                    transition: 'all 200ms ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                      bgcolor: '#FFFFFF',
+                      borderColor: 'primary.main',
+                    }
                   }}
                 >
                   {ch.action}

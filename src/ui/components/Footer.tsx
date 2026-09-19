@@ -23,7 +23,6 @@ import { getDonationUrl, getEmergencyUrl, getGenericInfoUrl, getVolunteerUrl, op
 import { get } from '@core/api/client';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
 import type { Settings } from '@core/types/settings';
-import { alpha } from '@mui/material/styles';
 
 const NAV_LINKS = [
   { label: 'Inicio',      to: '/' },
@@ -80,8 +79,8 @@ export default function Footer() {
     <Box
       component="footer"
       sx={{
-        bgcolor:    'secondary.dark',
-        color:      (theme) => alpha(theme.palette.secondary.contrastText, 0.8),
+        bgcolor:    '#1E1F20', // Carbon
+        color:      'rgba(255, 255, 255, 0.8)',
         mt:         'auto',
         pt:         6,
         pb:         3,
@@ -90,54 +89,36 @@ export default function Footer() {
       <Container maxWidth="lg">
         <Grid container spacing={4} mb={4}>
 
-          {/* Columna 1: Marca + misión + Contacto */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+          {/* Columna 1: Marca + misión + Redes Sociales */}
+          <Grid size={{ xs: 12, md: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <Box component="img" src="/logo-white.svg" alt="Patitas de Amor Barquisimeto" sx={{ height: { xs: 54, md: 60 }, width: 'auto', objectFit: 'contain' }} />
             </Box>
-            <Typography variant="body2" sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.9) }} lineHeight={1.8}>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.92)' }} lineHeight={1.8}>
               Somos una fundación sin fines de lucro en Barquisimeto dedicada al rescate, rehabilitación médica y adopción responsable de perros y gatos. Operamos 100% con voluntarios y donaciones de la comunidad.
             </Typography>
-            
-            <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography variant="overline" color="secondary.contrastText" fontWeight={700} fontSize="1rem" letterSpacing="0.5px" display="block" mb={0.5} sx={{ textTransform: 'none' }}>
-                Información de Contacto
-              </Typography>
-              {isLoading ? (
-                <Skeleton sx={{ bgcolor: (theme) => alpha(theme.palette.secondary.contrastText, 0.1) }} height={80} />
-              ) : (
-                <>
-                  {config.phone && (
-                    <Link href={`tel:${config.phone.replace(/\s+/g, '')}`} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', color: 'secondary.contrastText', transition: 'color 0.2s ease-in-out', cursor: 'pointer', textDecoration: 'none', '&:hover': { color: 'primary.light' } }}>
-                      <PhoneIcon sx={{ color: 'primary.light', fontSize: '1.2rem', mr: 1 }} /> 
-                      <Typography sx={{ color: 'inherit', fontSize: '0.9rem', fontWeight: 400 }}>{config.phone}</Typography>
-                    </Link>
-                  )}
-                  {config.email && (
-                    <Link href={`mailto:${config.email}`} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', color: 'secondary.contrastText', transition: 'color 0.2s ease-in-out', cursor: 'pointer', textDecoration: 'none', '&:hover': { color: 'primary.light' } }}>
-                      <EmailIcon sx={{ color: 'primary.light', fontSize: '1.2rem', mr: 1 }} /> 
-                      <Typography sx={{ color: 'inherit', fontSize: '0.9rem', fontWeight: 400 }}>{config.email}</Typography>
-                    </Link>
-                  )}
-                  {config.address && (
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', color: 'secondary.contrastText' }}>
-                      <PlaceIcon sx={{ color: 'primary.light', fontSize: '1.2rem', mt: 0.3, mr: 1 }} /> 
-                      <Typography sx={{ color: 'secondary.contrastText', fontSize: '0.9rem', fontWeight: 400 }}>{config.address}</Typography>
-                    </Box>
-                  )}
-                </>
-              )}
-            </Box>
 
             {/* Redes Sociales */}
-            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+            <Box sx={{ mt: 3, display: 'flex', gap: 1.5 }}>
               {config.whatsapp && (
                 <IconButton
                   href={`https://wa.me/${config.whatsapp.replace(/\D/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Contactar por WhatsApp"
-                  sx={{ bgcolor: (theme) => alpha(theme.palette.secondary.contrastText, 0.1), color: 'secondary.contrastText', borderRadius: 0, transition: 'all 0.2s ease-in-out', '&:hover': { bgcolor: '#25D366', color: 'secondary.contrastText' } }}
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.08)',
+                    color: 'rgba(255, 255, 255, 0.90)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: 0,
+                    transition: 'all 0.25s ease-in-out',
+                    '&:hover': {
+                      bgcolor: '#25D366',
+                      borderColor: '#25D366',
+                      color: '#FFFFFF',
+                      boxShadow: '0 0 12px rgba(37, 211, 102, 0.4)'
+                    }
+                  }}
                 >
                   <WhatsAppIcon />
                 </IconButton>
@@ -148,7 +129,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Visitar nuestro perfil de Facebook"
-                  sx={{ bgcolor: (theme) => alpha(theme.palette.secondary.contrastText, 0.1), color: 'secondary.contrastText', borderRadius: 0, transition: 'all 0.2s ease-in-out', '&:hover': { bgcolor: '#1877F2', color: 'secondary.contrastText' } }}
+                  sx={{ bgcolor: 'rgba(255, 255, 255, 0.08)', color: '#FFFFFF', borderRadius: '50%', transition: 'all 0.2s ease-in-out', '&:hover': { bgcolor: '#1877F2', color: '#FFFFFF' } }}
                 >
                   <FacebookIcon />
                 </IconButton>
@@ -159,7 +140,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Visitar nuestro perfil de Instagram"
-                  sx={{ bgcolor: (theme) => alpha(theme.palette.secondary.contrastText, 0.1), color: 'secondary.contrastText', borderRadius: 0, transition: 'all 0.2s ease-in-out', '&:hover': { background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', color: 'secondary.contrastText' } }}
+                  sx={{ bgcolor: 'rgba(255, 255, 255, 0.08)', color: '#FFFFFF', borderRadius: '50%', transition: 'all 0.2s ease-in-out', '&:hover': { bgcolor: '#E4405F', color: '#FFFFFF' } }}
                 >
                   <InstagramIcon />
                 </IconButton>
@@ -170,7 +151,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Visitar nuestro perfil de Twitter / X"
-                  sx={{ bgcolor: (theme) => alpha(theme.palette.secondary.contrastText, 0.1), color: 'secondary.contrastText', borderRadius: 0, transition: 'all 0.2s ease-in-out', '&:hover': { bgcolor: 'secondary.contrastText', color: '#000000' } }}
+                  sx={{ bgcolor: 'rgba(255, 255, 255, 0.08)', color: '#FFFFFF', borderRadius: '50%', transition: 'all 0.2s ease-in-out', '&:hover': { bgcolor: '#000000', color: '#FFFFFF', border: '1px solid rgba(255, 255, 255, 0.35)' } }}
                 >
                   <TwitterIcon />
                 </IconButton>
@@ -179,18 +160,18 @@ export default function Footer() {
           </Grid>
 
           {/* Columna 2: Navegación */}
-          <Grid size={{ xs: 6, md: 2 }}>
-            <Typography variant="overline" color="secondary.contrastText" fontWeight={700} fontSize="1rem" letterSpacing="0.5px" display="block" mb={1.5} sx={{ textTransform: 'none' }}>
+          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+            <Typography variant="overline" color="#FFFFFF" fontWeight={600} fontSize="1rem" letterSpacing="0.5px" display="block" mb={2.5} sx={{ textTransform: 'none' }}>
               Navegación
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {NAV_LINKS.map((l) => (
                 <Link
                   key={l.to}
                   component={RouterLink}
                   to={l.to}
                   underline="none"
-                  sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.9), fontSize: '0.875rem', transition: 'color 0.2s ease-in-out', '&:hover': { color: 'primary.light' } }}
+                  sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.95rem', transition: 'color 0.2s ease-in-out', '&:hover': { color: '#35b4dd' } }}
                 >
                   {l.label}
                 </Link>
@@ -198,30 +179,60 @@ export default function Footer() {
             </Box>
           </Grid>
 
-          {/* Columna 3: WhatsApp */}
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="overline" color="secondary.contrastText" fontWeight={700} fontSize="1rem" letterSpacing="0.5px" display="block" mb={1.5} sx={{ textTransform: 'none' }}>
+          {/* Columna 3: Contacto (Acciones) */}
+          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+            <Typography variant="overline" color="#FFFFFF" fontWeight={600} fontSize="1rem" letterSpacing="0.5px" display="block" mb={2.5} sx={{ textTransform: 'none' }}>
               Contacto
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Link component="button" variant="body2" onClick={() => openWhatsApp(getGenericInfoUrl(phone))} sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.8), '&:hover': { color: 'primary.light' }, textAlign: 'left', display: 'block', mb: 1.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Link component="button" variant="body2" onClick={() => openWhatsApp(getGenericInfoUrl(phone))} sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.95rem', '&:hover': { color: '#35b4dd' }, textAlign: 'left', display: 'block' }}>
                 Adoptar
               </Link>
-              <Link component="button" variant="body2" onClick={() => openWhatsApp(getVolunteerUrl(phone))} sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.8), '&:hover': { color: 'primary.light' }, textAlign: 'left', display: 'block', mb: 1.5 }}>
+              <Link component="button" variant="body2" onClick={() => openWhatsApp(getVolunteerUrl(phone))} sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.95rem', '&:hover': { color: '#35b4dd' }, textAlign: 'left', display: 'block' }}>
                 Ser Voluntario
               </Link>
-              <Link component="button" variant="body2" onClick={() => openWhatsApp(getDonationUrl(phone))} sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.8), '&:hover': { color: 'primary.light' }, textAlign: 'left', display: 'block', mb: 1.5 }}>
+              <Link component="button" variant="body2" onClick={() => openWhatsApp(getDonationUrl(phone))} sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.95rem', '&:hover': { color: '#35b4dd' }, textAlign: 'left', display: 'block' }}>
                 Donaciones
               </Link>
-              <Link component="button" variant="body2" onClick={() => openWhatsApp(getEmergencyUrl(phone))} sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.8), '&:hover': { color: 'primary.light' }, textAlign: 'left', display: 'block' }}>
+              <Link component="button" variant="body2" onClick={() => openWhatsApp(getEmergencyUrl(phone))} sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.95rem', '&:hover': { color: '#35b4dd' }, textAlign: 'left', display: 'block' }}>
                 Reportar Emergencia
               </Link>
             </Box>
           </Grid>
 
-          {/* Columna 4: Mapa */}
-          {finalMapEmbedUrl && (
-            <Grid size={{ xs: 12, md: 3 }}>
+          {/* Columna 4: Información de Contacto y Mapa */}
+          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+            <Typography variant="overline" color="#FFFFFF" fontWeight={600} fontSize="1rem" letterSpacing="0.5px" display="block" mb={2.5} sx={{ textTransform: 'none' }}>
+              Información de Contacto
+            </Typography>
+            
+            {isLoading ? (
+              <Skeleton sx={{ bgcolor: 'rgba(255,255,255, 0.1)' }} height={80} />
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+                {config.phone && (
+                  <Link href={`tel:${config.phone.replace(/\s+/g, '')}`} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', color: 'rgba(255, 255, 255, 0.75)', transition: 'color 0.2s ease-in-out', cursor: 'pointer', textDecoration: 'none', '&:hover': { color: '#35b4dd', '& .contact-icon': { transform: 'scale(1.15)', filter: 'brightness(1.2)' } } }}>
+                    <PhoneIcon className="contact-icon" sx={{ fontSize: '1.2rem', color: '#35b4dd', flexShrink: 0, transition: 'all 0.2s ease-in-out' }} /> 
+                    <Typography sx={{ color: 'inherit', fontSize: '0.95rem', fontWeight: 400, transition: 'color 0.2s ease-in-out' }}>{config.phone}</Typography>
+                  </Link>
+                )}
+                {config.email && (
+                  <Link href={`mailto:${config.email}`} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', color: 'rgba(255, 255, 255, 0.75)', transition: 'color 0.2s ease-in-out', cursor: 'pointer', textDecoration: 'none', '&:hover': { color: '#35b4dd', '& .contact-icon': { transform: 'scale(1.15)', filter: 'brightness(1.2)' } } }}>
+                    <EmailIcon className="contact-icon" sx={{ fontSize: '1.2rem', color: '#35b4dd', flexShrink: 0, transition: 'all 0.2s ease-in-out' }} /> 
+                    <Typography sx={{ color: 'inherit', fontSize: '0.95rem', fontWeight: 400, transition: 'color 0.2s ease-in-out' }}>{config.email}</Typography>
+                  </Link>
+                )}
+                {config.address && (
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', color: 'rgba(255, 255, 255, 0.75)', transition: 'color 0.2s ease-in-out', cursor: 'pointer', '&:hover': { color: '#35b4dd', '& .contact-icon': { transform: 'scale(1.15)', filter: 'brightness(1.2)' } } }}>
+                    <PlaceIcon className="contact-icon" sx={{ fontSize: '1.2rem', color: '#35b4dd', flexShrink: 0, mt: 0.3, transition: 'all 0.2s ease-in-out' }} /> 
+                    <Typography sx={{ color: 'inherit', fontSize: '0.95rem', fontWeight: 400, transition: 'color 0.2s ease-in-out' }}>{config.address}</Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Mapa */}
+            {finalMapEmbedUrl && (
               <Link
                 href={finalMapLinkUrl}
                 target="_blank"
@@ -230,8 +241,9 @@ export default function Footer() {
                 sx={{
                   display: 'block',
                   width: '100%',
-                  height: 180,
+                  height: 140,
                   overflow: 'hidden',
+                  borderRadius: 2,
                   opacity: 0.9,
                   transition: 'opacity 0.2s',
                   '&:hover': { opacity: 1 }
@@ -248,15 +260,15 @@ export default function Footer() {
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               </Link>
-            </Grid>
-          )}
+            )}
+          </Grid>
         </Grid>
 
-        <Divider sx={{ borderColor: (theme) => alpha(theme.palette.secondary.contrastText, 0.10), mb: 2.5 }} />
+        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', mb: 2.5 }} />
 
         {/* Bottom bar */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
-          <Typography variant="caption" sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.70) }}>
+          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
             © {year} Patitas de Amor Barquisimeto · Todos los derechos reservados
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
@@ -266,7 +278,7 @@ export default function Footer() {
                 component={RouterLink}
                 to={l.to}
                 underline="hover"
-                sx={{ color: (theme) => alpha(theme.palette.secondary.contrastText, 0.75), fontSize: '0.75rem', '&:hover': { color: 'primary.light' } }}
+                sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.75rem', '&:hover': { color: '#35b4dd' } }}
               >
                 {l.label}
               </Link>

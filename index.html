@@ -4,9 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- LCP Preload para Hero Image (Responsivo) -->
-    <link rel="preload" as="image" href="/hero-mobile.webp" type="image/webp" fetchpriority="high" imagesrcset="/hero-mobile.webp 800w" imagesizes="100vw" />
-    <link rel="preload" as="image" href="/hero-desktop.webp" type="image/webp" fetchpriority="high" media="(min-width: 900px)" imagesrcset="/hero-desktop.webp 1920w" imagesizes="100vw" />
+    <!-- LCP Hero Image: prioridad nativa via fetchpriority="high" + loading="eager" en el <img> del componente -->
 
     <!-- SEO y Meta Tags Base (serán sobreescritos por React Helmet) -->
     <title>Patitas de Amor Barquisimeto — Refugio y Adopción Animal</title>

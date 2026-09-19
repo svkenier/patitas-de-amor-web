@@ -16,17 +16,17 @@ const palette: PaletteOptions = {
   mode: 'light',
 
   primary: {
-    main:        '#65C620', // Verde Lima / huella de mascota
-    light:       '#BAFD91', // Verde Menta
-    dark:        '#4A9218', // Oscurecido ~15% para hover
-    contrastText: '#FFFFFF', // Blanco sobre verde oscuro
+    main:        '#35B4DD', // Azul Cian / cielo
+    light:       '#6DD3F5',
+    dark:        '#17488B', 
+    contrastText: '#FFFFFF',
   },
 
   secondary: {
-    main:        '#13A7DF', // Azul Cian / cielo
-    light:       '#6DD3F5',
-    dark:        '#17488B', // Azul Cobalto (footer)
-    contrastText: '#FFFFFF',
+    main:        '#BAFE93', // Verde Menta
+    light:       '#E8FCDB',
+    dark:        '#4A9218', 
+    contrastText: '#1E1F20', // Texto carbón
   },
 
   error: {
@@ -36,10 +36,10 @@ const palette: PaletteOptions = {
   },
 
   warning: {
-    main:  '#FFAF2A', // Naranja/Ámbar de la paleta
+    main:  '#FFAF2B', // Ámbar de la paleta
     light: '#FFD57F',
     dark:  '#D97706',
-    contrastText: '#1D1D1B',
+    contrastText: '#1E1F20',
   },
 
   success: {
@@ -55,17 +55,17 @@ const palette: PaletteOptions = {
   },
 
   background: {
-    default: '#FAFAF8', // Fondo general limpio
-    paper:   '#FFFFFF', // Fondo de tarjetas
+    default: '#F8FAFC', // Fondo general limpio (cálido/limpio)
+    paper:   '#FFFFFF', // Fondo de tarjetas blanco puro
   },
 
   text: {
-    primary:   '#1D1D1B', // Del SVG logo
+    primary:   '#1E1F20', // Carbon
     secondary: '#4A5568', // slate-600
     disabled:  '#A0AEC0',
   },
 
-  divider: '#E8F5E9', // verde muy claro para divisores suaves
+  divider: 'rgba(30, 31, 32, 0.08)', // divisores sutiles con tono carbón
 };
 
 // ─── Tipografía ───────────────────────────────────────────────────────────────
@@ -107,14 +107,14 @@ const theme = createTheme({
       fontSize: 'clamp(2rem, 5vw, 3rem)',
       lineHeight: 1.2,
       letterSpacing: '-0.03em',
-      color: '#1D1D1B',
+      color: '#1E1F20',
     },
     h2: {
       fontWeight: 800,
       fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)',
       lineHeight: 1.25,
       letterSpacing: '-0.02em',
-      color: '#1D1D1B',
+      color: '#1E1F20',
     },
     h3: {
       fontWeight: 700,
@@ -182,9 +182,9 @@ const theme = createTheme({
     },
   },
 
-  // ─── Bordes completamente rectos (Sharp UI) ─────────────────────────────────
+  // ─── Bordes redondeados orgánicos ─────────────────────────────────
   shape: {
-    borderRadius: 0, 
+    borderRadius: 12, 
   },
 
   shadows: [
@@ -227,8 +227,8 @@ const theme = createTheme({
           MozOsxFontSmoothing: 'grayscale',
         },
         body: {
-          backgroundColor: '#FFFFFF',
-          color: '#1E293B',
+          backgroundColor: '#FAF9F6',
+          color: '#1E1F20',
         },
         ':target': {
           scrollMarginTop: '80px',
@@ -243,13 +243,13 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#FFFFFF',
-          border: '1px solid #E8F5E9',
-          borderRadius: 0, // Sharp UI
-          boxShadow: 'none',
+          border: 'none', // Sin borde fuerte
+          borderRadius: 16, // Más orgánico
+          boxShadow: '0 4px 20px rgba(30, 31, 32, 0.05)', // Sombra envolvente
           transition: 'transform 200ms cubic-bezier(0.4,0,0.2,1), box-shadow 200ms',
           '&:hover': {
             transform: 'translateY(-3px)',
-            boxShadow: '0 8px 24px rgba(101, 198, 32, 0.15)',
+            boxShadow: '0 8px 30px rgba(30, 31, 32, 0.08)',
           },
         },
       },
@@ -261,7 +261,7 @@ const theme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: 0, // Sharp UI
+          borderRadius: 12,
           paddingLeft: 24,
           paddingRight: 24,
           paddingTop: 10,
@@ -272,19 +272,20 @@ const theme = createTheme({
           },
         },
         containedPrimary: {
-          backgroundColor: '#65C620',
+          backgroundColor: '#35B4DD',
+          color: '#FFFFFF',
           '&:hover': {
-            backgroundColor: '#4A9218',
+            backgroundColor: '#6DD3F5', // Cian claro en hover
           },
         },
         outlined: {
           borderWidth: '1px',
-          borderColor: '#CBD5E1',
-          color: '#1D1D1B',
+          borderColor: 'rgba(30, 31, 32, 0.15)',
+          color: '#1E1F20',
           '&:hover': {
             borderWidth: '1px',
             backgroundColor: '#F8FAFC',
-            borderColor: '#94A3B8',
+            borderColor: '#303132',
           },
         },
       },
@@ -293,7 +294,7 @@ const theme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 0, // Sharp UI
+          borderRadius: 8,
           backgroundColor: '#FFFFFF',
           transition: 'border-color 200ms',
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -307,7 +308,7 @@ const theme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: 0, // Sharp UI
+          borderRadius: 6,
           fontWeight: 600,
           fontSize: '0.75rem',
           letterSpacing: '0.05em',
@@ -319,8 +320,8 @@ const theme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          borderRadius: 0, // Sharp UI
-          border: '1px solid #E2E8F0',
+          borderRadius: 12,
+          border: '1px solid rgba(0, 0, 0, 0.06)',
           boxShadow: '0 25px 50px rgba(0,0,0,0.10)',
         },
       },
@@ -335,7 +336,7 @@ const theme = createTheme({
           backgroundImage: 'none',
         },
         rounded: {
-          borderRadius: 0, // Sharp UI
+          borderRadius: 8,
         },
       },
     },
@@ -370,7 +371,7 @@ const theme = createTheme({
           backgroundColor: '#1D1D1B',
           color: '#FFFFFF',
           fontSize: '0.75rem',
-          borderRadius: 0, // Sharp UI
+          borderRadius: 6,
           padding: '8px 12px',
           fontWeight: 600,
         },
@@ -383,8 +384,8 @@ const theme = createTheme({
     MuiLinearProgress: {
       styleOverrides: {
         root: {
-          borderRadius: 0, // Sharp UI
-          height: 4,
+          borderRadius: 6, // Orgánico
+          height: 6,
         },
       },
     },
@@ -395,7 +396,7 @@ const theme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: 0, // Sharp UI
+          borderRadius: 12, // Orgánico
           backgroundColor: '#F1F5F9',
         },
       },
@@ -404,7 +405,7 @@ const theme = createTheme({
     MuiAlert: {
       styleOverrides: {
         root: {
-          borderRadius: 0, // Sharp UI
+          borderRadius: 12, // Orgánico
           fontSize: '0.875rem',
           fontWeight: 500,
           border: '1px solid',
@@ -442,8 +443,7 @@ export default theme;
 export const SECTION_ANIMATION_DURATION = 500; // ms
 
 /** Color del borde de tarjetas (constante compartida con sx props). */
-/** Color del borde de tarjetas (constante compartida con sx props). */
-export const CARD_BORDER = '1px solid #E2E8F0';
+export const CARD_BORDER = 'none';
 
 /** Fondo de tarjeta (constante compartida). */
 export const CARD_BG = '#FFFFFF';
