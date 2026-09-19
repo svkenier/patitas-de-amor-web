@@ -59,7 +59,8 @@ export default function PetsPage() {
         total: (res || []).length 
       };
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const filtered = useMemo(() => {

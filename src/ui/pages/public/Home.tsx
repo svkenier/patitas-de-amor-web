@@ -77,7 +77,8 @@ export default function Home() {
         total: records.length 
       } as PaginatedRecords;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const theme = useTheme();

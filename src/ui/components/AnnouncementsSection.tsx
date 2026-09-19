@@ -237,7 +237,8 @@ export default function AnnouncementsSection() {
       const data = await get<any>('/public/announcements');
       return Array.isArray(data) ? data : (data?.announcements || []);
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const activeAnnouncements = announcements?.filter(a => 
@@ -258,6 +259,7 @@ export default function AnnouncementsSection() {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const itemsVisible = isDesktop ? 3 : isTablet ? 2 : 1;
   const loopActive = orderedAnnouncements.length > itemsVisible;
+  const showDots = orderedAnnouncements.length > itemsVisible;
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: loopActive,
@@ -392,7 +394,7 @@ export default function AnnouncementsSection() {
                 )}
 
                 {/* Pagination Dots */}
-                {!isLoading && scrollSnaps.length > 1 && (
+                {!isLoading && showDots && (
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 3 }}>
                     {scrollSnaps.map((_, i) => (
                       <Box
