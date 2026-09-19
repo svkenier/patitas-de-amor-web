@@ -29,7 +29,18 @@ interface CacheEntry {
   etag: string;
   data: any;
 }
-const etagCache = new Map<string, CacheEntry>();
+export const etagCache = new Map<string, CacheEntry>();
+
+/** Elimina una o todas las entradas de la caché ETag para forzar un re-fetch limpio. */
+export const clearEtagCache = (urlFragment?: string): void => {
+  if (!urlFragment) {
+    etagCache.clear();
+    return;
+  }
+  for (const key of etagCache.keys()) {
+    if (key.includes(urlFragment)) etagCache.delete(key);
+  }
+};
 
 // ─── Instancia de Axios ───────────────────────────────────────────────────────
 
