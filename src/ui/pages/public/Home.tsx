@@ -186,7 +186,7 @@ export default function Home() {
           <img
             src="/hero-mobile.webp"
             alt="Perros y gatos rescatados por Patitas de Amor Barquisimeto"
-            fetchpriority="high"
+            {...({ fetchpriority: "high" } as any)}
             loading="eager"
             width="800"
             height="1200"
