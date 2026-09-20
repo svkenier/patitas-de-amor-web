@@ -182,9 +182,9 @@ export default function Home() {
             }
           }}
         >
-          <source media="(min-width: 900px)" srcSet="/hero-desktop.webp?v=15" width="1920" height="1080" />
+          <source media="(min-width: 900px)" srcSet="/hero-desktop.webp?v=16" width="1920" height="1080" />
           <img
-            src="/hero-mobile.webp?v=15"
+            src="/hero-mobile.webp?v=16"
             alt="Perros y gatos rescatados por Patitas de Amor Barquisimeto"
             {...({ fetchpriority: "high" } as any)}
             loading="eager"

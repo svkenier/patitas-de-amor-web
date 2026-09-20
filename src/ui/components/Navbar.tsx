@@ -96,7 +96,7 @@ export default function Navbar() {
     <Box sx={{ width: 280, pt: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1 }}>
         <Typography variant="h6" fontWeight={700} color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box component="img" src="/logo.svg" alt="Patitas de Amor Barquisimeto" sx={{ height: { xs: 42, md: 48 }, width: 'auto', objectFit: 'contain' }} />
+          <Box component="img" src="/logo.svg" alt="Patitas de Amor Barquisimeto" {...({ width: 48, height: 48 } as any)} sx={{ height: { xs: 42, md: 48 }, width: 'auto', objectFit: 'contain' }} />
         </Typography>
         <IconButton onClick={() => setDrawerOpen(false)} size="small" aria-label="Cerrar menú">
           <CloseIcon />
@@ -212,11 +212,11 @@ export default function Navbar() {
             to="/"
             variant="h6"
             fontWeight={800}
-            color="primary"
+            color="text.primary"
             aria-label="Patitas de Amor Barquisimeto - Ir a inicio"
             sx={{ textDecoration: 'none', flexGrow: { xs: 1, md: 0 }, mr: 4, display: 'flex', alignItems: 'center', gap: 1 }}
           >
-            <Box component="img" src="/logo.svg" alt="Patitas de Amor Barquisimeto" sx={{ height: { xs: 42, md: 50 }, width: 'auto', objectFit: 'contain' }} />
+            <Box component="img" src="/logo.svg" alt="Patitas de Amor Barquisimeto" {...({ width: 50, height: 50 } as any)} sx={{ height: { xs: 42, md: 50 }, width: 'auto', objectFit: 'contain' }} />
           </Typography>
 
           {/* Desktop nav links */}
@@ -230,7 +230,7 @@ export default function Navbar() {
                   size="small"
                   startIcon={link.to === '/admin' ? <AdminPanelSettingsIcon fontSize="small" /> : undefined}
                   sx={{
-                    color:      isActive(link.to) ? 'primary.main' : 'text.secondary',
+                    color:      'text.secondary',
                     fontWeight: isActive(link.to) ? 700 : 500,
                     bgcolor:    isActive(link.to) ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
                     borderBottom: isActive(link.to) ? '2px solid' : 'none',

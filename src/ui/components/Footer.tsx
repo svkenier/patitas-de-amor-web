@@ -92,7 +92,7 @@ export default function Footer() {
           {/* Columna 1: Marca + misión + Redes Sociales */}
           <Grid size={{ xs: 12, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <Box component="img" src="/logo-white.svg" alt="Patitas de Amor Barquisimeto" sx={{ height: { xs: 54, md: 60 }, width: 'auto', objectFit: 'contain' }} />
+              <Box component="img" src="/logo-white.svg" alt="Patitas de Amor Barquisimeto" {...({ width: 60, height: 60 } as any)} sx={{ height: { xs: 54, md: 60 }, width: 'auto', objectFit: 'contain' }} />
             </Box>
             <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.92)' }} lineHeight={1.8}>
               Somos una fundación sin fines de lucro en Barquisimeto dedicada al rescate, rehabilitación médica y adopción responsable de perros y gatos. Operamos 100% con voluntarios y donaciones de la comunidad.
