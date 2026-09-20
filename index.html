@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- LCP Hero Image: prioridad nativa via fetchpriority="high" + loading="eager" en el <img> del componente -->
-
+    <link rel="preload" as="image" href="/hero-desktop.webp?v=17" media="(min-width: 900px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/hero-mobile.webp?v=17" media="(max-width: 899px)" fetchpriority="high" />
     <!-- SEO y Meta Tags Base (serán sobreescritos por React Helmet) -->
     <title>Patitas de Amor Barquisimeto — Refugio y Adopción Animal</title>
     <meta name="description" content="Fundación de rescate y adopción responsable de perros y gatos en Barquisimeto, Venezuela." />
