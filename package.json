@@ -9,6 +9,7 @@
     "prebuild": "tsx scripts/seed.ts",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "oxlint && tsc --noEmit",
     "preview": "vite preview",
     "preview:pages": "wrangler pages dev ./dist --compatibility-flags=nodejs_compat",
     "test:e2e": "playwright test",
