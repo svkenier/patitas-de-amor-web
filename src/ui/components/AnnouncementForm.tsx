@@ -199,6 +199,14 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const handleTrigger = () => {
+    if (isMobile) {
+      setDrawerOpen(true);
+    } else {
+      galleryInputRef.current?.click();
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -227,7 +235,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
             <Box
-              onClick={() => setDrawerOpen(true)}
+              onClick={handleTrigger}
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -299,6 +307,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
               open={drawerOpen}
               onClose={() => setDrawerOpen(false)}
               PaperProps={{ sx: { borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
+              sx={{ zIndex: (theme) => theme.zIndex.modal + 100 }}
             >
               <Box sx={{ p: 2 }}>
                 <Typography variant="h6" sx={{ mb: 1, px: 2, pt: 1 }}>

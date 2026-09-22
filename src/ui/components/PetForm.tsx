@@ -80,6 +80,8 @@ interface ImagePickerProps {
 
 function ImagePicker({ label, preview, onFile, onClear, size = 'large' }: ImagePickerProps) {
   const h = size === 'large' ? 180 : 110;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -91,10 +93,18 @@ function ImagePicker({ label, preview, onFile, onClear, size = 'large' }: ImageP
     setDrawerOpen(false);
   };
 
+  const handleTrigger = () => {
+    if (isMobile) {
+      setDrawerOpen(true);
+    } else {
+      galleryInputRef.current?.click();
+    }
+  };
+
   return (
     <Box sx={{ position: 'relative' }}>
       <Box
-        onClick={() => setDrawerOpen(true)}
+        onClick={handleTrigger}
         sx={{
           display:        'flex',
           flexDirection:  'column',
@@ -148,6 +158,7 @@ function ImagePicker({ label, preview, onFile, onClear, size = 'large' }: ImageP
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         PaperProps={{ sx: { borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
+        sx={{ zIndex: (theme) => theme.zIndex.modal + 100 }}
       >
         <Box sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ mb: 1, px: 2, pt: 1 }}>
