@@ -2,7 +2,7 @@
  * AnnouncementForm — Dialog modal para crear o editar un anuncio/evento.
  */
 
-import { useState, type ChangeEvent } from 'react';
+import { useState, useRef, type ChangeEvent } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Dialog from '@mui/material/Dialog';
@@ -10,6 +10,12 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 import TextField from '@mui/material/TextField';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -26,6 +32,8 @@ import Tooltip from '@mui/material/Tooltip';
 import Alert from '@mui/material/Alert';
 import CloseIcon     from '@mui/icons-material/Close';
 import AddPhotoIcon  from '@mui/icons-material/AddPhotoAlternate';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import CollectionsIcon from '@mui/icons-material/Collections';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -106,8 +114,12 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
   const [imgHeight, setImgHeight] = useState<number | undefined>(initial?.attributes?.image_height as number);
   const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    setDrawerOpen(false);
     const file = e.target.files?.[0];
     if (!file) return;
     setImgLoading(true);
@@ -215,8 +227,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
             <Box
-              component="label"
-              htmlFor="announcement-img"
+              onClick={() => setDrawerOpen(true)}
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -269,12 +280,46 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
               )}
             </Box>
             <input
-              id="announcement-img"
+              ref={cameraInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/*"
+              capture="environment"
               style={{ display: 'none' }}
               onChange={handleFile}
             />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFile}
+            />
+            <Drawer
+              anchor="bottom"
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              PaperProps={{ sx: { borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
+            >
+              <Box sx={{ p: 2 }}>
+                <Typography variant="h6" sx={{ mb: 1, px: 2, pt: 1 }}>
+                  Seleccionar imagen
+                </Typography>
+                <List>
+                  <ListItem disablePadding>
+                    <ListItemButton onClick={() => cameraInputRef.current?.click()}>
+                      <ListItemIcon><PhotoCameraIcon /></ListItemIcon>
+                      <ListItemText primary="Tomar foto" />
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem disablePadding>
+                    <ListItemButton onClick={() => galleryInputRef.current?.click()}>
+                      <ListItemIcon><CollectionsIcon /></ListItemIcon>
+                      <ListItemText primary="Elegir de la galería" />
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+              </Box>
+            </Drawer>
           </Grid>
 
           <Grid size={{ xs: 12, sm: 8 }}>

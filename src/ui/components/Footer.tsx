@@ -269,7 +269,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
           <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-            © {year} Patitas de Amor Barquisimeto · Todos los derechos reservados
+            © {year} Patitas de Amor Barquisimeto · Todos los derechos reservados | by Jhon Fernández
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             {LEGAL_LINKS.map((l) => (
