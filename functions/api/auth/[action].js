@@ -56,6 +56,11 @@ async function handleLogin(request, env) {
         let valid = user?.password_hash ? await verifyPassword(password, user.password_hash) : false;
         const envUser = (env.ADMIN_USER ?? '').replace(/^"|"$/g, '').trim();
         const envPass = (env.ADMIN_PASSWORD ?? '').replace(/^"|"$/g, '').trim();
+        if (user && envUser && usernameClean === envUser.toLowerCase() && user.role !== 'owner') {
+            console.log('[Auth Debug] Migrando usuario root a owner...');
+            user.role = 'owner';
+            await updateUserPreservingTTL(usernameClean, { role: 'owner' }, env);
+        }
         // Fallback de Desarrollo / Sincronización Automática:
         if (!valid && envUser && envPass && usernameClean === envUser.toLowerCase() && password === envPass) {
             valid = true;
@@ -126,6 +131,11 @@ async function handleVerify(request, env) {
     const user = await getUser(payload.sub, env);
     if (!user) {
         return new Response(JSON.stringify({ error: 'Usuario no encontrado' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+    const envUser = (env.ADMIN_USER ?? '').replace(/^"|"$/g, '').trim();
+    if (user && envUser && user.username.toLowerCase() === envUser.toLowerCase() && user.role !== 'owner') {
+        user.role = 'owner';
+        await updateUserPreservingTTL(user.username, { role: 'owner' }, env);
     }
     return new Response(JSON.stringify({
         user: { username: user.username, role: user.role, last_login: user.last_login }
