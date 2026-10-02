@@ -28,7 +28,7 @@ export default function DomainAlert() {
     return (
       <Box sx={{ mb: 3 }}>
         <Alert severity="warning" variant="filled">
-          ¡Aviso! El dominio expirará en {diffDays} días ({expiration.toLocaleDateString()}). Por favor renuévelo desde la configuración para evitar interrupciones.
+          Aviso administrativo: El servicio de dominio web anual se encuentra próximo a su fecha de vencimiento. Para asegurar la continuidad operativa de la plataforma sin interrupciones, por favor comuníquese a la brevedad con el administrador técnico del sistema para coordinar la renovación.
         </Alert>
       </Box>
     );
