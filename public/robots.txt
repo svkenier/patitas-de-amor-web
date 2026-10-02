@@ -1,4 +1,6 @@
 User-agent: *
+Disallow: /admin/
+Disallow: /login
 Allow: /
 
-Sitemap: https://patitasdeamor.org/sitemap.xml
+Sitemap: https://patitasdeamorbqto.com/sitemap.xml
