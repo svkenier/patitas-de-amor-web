@@ -75,7 +75,7 @@ async function seedRedis() {
     await setUser({
       username: env.ADMIN_USER,
       password_hash: hashed,
-      role: 'superadmin',
+      role: 'owner',
       tokenVersion: 1,
       last_login: new Date().toISOString(),
       created_by: 'system-seeder',

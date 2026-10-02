@@ -14,6 +14,7 @@ export const ROLE_LEVEL = {
     voluntario: 1,
     encargado: 2,
     superadmin: 3,
+    owner: 4,
 };
 // ─── Permisos y Guardias ──────────────────────────────────────────────────────
 /**
@@ -21,7 +22,7 @@ export const ROLE_LEVEL = {
  * para administrar (crear/eliminar) al `targetRole`.
  *
  * Reglas:
- * - `superadmin` puede gestionar a `encargado` y `voluntario`.
+ * - `owner` y `superadmin` pueden gestionar a `encargado` y `voluntario`.
  * - `encargado`  puede gestionar solo a `voluntario`.
  * - `voluntario` no puede gestionar a nadie.
  */
@@ -36,9 +37,11 @@ export function canManage(actorRole, targetRole) {
  * - `encargado` solo puede crear `encargado` y `voluntario`.
  */
 export function canCreateRole(actorRole, newRole) {
-    if (actorRole === 'superadmin')
+    if (actorRole === 'owner')
         return true;
+    if (actorRole === 'superadmin')
+        return newRole !== 'owner';
     if (actorRole === 'encargado')
-        return newRole !== 'superadmin';
+        return newRole !== 'superadmin' && newRole !== 'owner';
     return false;
 }

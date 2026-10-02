@@ -24,7 +24,8 @@ import type { PublicUser, UserRole } from '@core/types/user';
 import AdminEmptyState from '@ui/components/AdminEmptyState';
 
 
-const ROLE_COLORS: Record<UserRole, 'error' | 'warning' | 'default'> = {
+const ROLE_COLORS: Record<UserRole, 'error' | 'warning' | 'default' | 'info'> = {
+  owner:      'info',
   superadmin: 'error',
   encargado:  'warning',
   voluntario: 'default',
@@ -82,14 +83,14 @@ export function UserTable({
     }
     
     if (isMainOwner) {
-      return { canReset: true, canDelete: true, canForceLogout: true, disabled: false, disabledReason: '' };
+      return { canReset: true, canDelete: true, canForceLogout: currentUser.role === 'owner', disabled: false, disabledReason: '' };
     }
     
     const hasPermission = canManage(currentUser.role, target.role);
     return { 
       canReset: hasPermission, 
       canDelete: hasPermission, 
-      canForceLogout: false,
+      canForceLogout: currentUser.role === 'owner',
       disabled: false, 
       disabledReason: '' 
     };

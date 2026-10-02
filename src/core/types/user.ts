@@ -16,7 +16,7 @@
  * - `encargado`   (Nivel 2): Todo lo anterior + gestionar voluntarios.
  * - `superadmin`  (Nivel 3): Control total. Cuenta permanente (sin TTL).
  */
-export type UserRole = 'voluntario' | 'encargado' | 'superadmin';
+export type UserRole = 'voluntario' | 'encargado' | 'superadmin' | 'owner';
 
 /**
  * Mapa numérico de nivel para comparaciones de jerarquía.
@@ -26,6 +26,7 @@ export const ROLE_LEVEL: Record<UserRole, number> = {
   voluntario:  1,
   encargado:   2,
   superadmin:  3,
+  owner:       4,
 } as const;
 
 // ─── Interfaz de Usuario en KV ───────────────────────────────────────────────
@@ -139,7 +140,7 @@ export interface LoginResponse {
 export interface CreateUserRequest {
   username: string;
   password: string;
-  role: Exclude<UserRole, 'superadmin'> | 'superadmin'; // superadmin solo puede ser creado por superadmin
+  role: Exclude<UserRole, 'superadmin' | 'owner'> | 'superadmin'; // superadmin solo puede ser creado por superadmin u owner
 }
 
 /** Payload para `POST /api/users/reset-password` (solo SuperAdmin). */
@@ -169,7 +170,7 @@ export interface UsersListResponse {
  * para administrar (crear/eliminar) al `targetRole`.
  *
  * Reglas:
- * - `superadmin` puede gestionar a `encargado` y `voluntario`.
+ * - `owner` y `superadmin` pueden gestionar a `encargado` y `voluntario`.
  * - `encargado`  puede gestionar solo a `voluntario`.
  * - `voluntario` no puede gestionar a nadie.
  */
@@ -185,7 +186,8 @@ export function canManage(actorRole: UserRole, targetRole: UserRole): boolean {
  * - `encargado` solo puede crear `encargado` y `voluntario`.
  */
 export function canCreateRole(actorRole: UserRole, newRole: UserRole): boolean {
-  if (actorRole === 'superadmin') return true;
-  if (actorRole === 'encargado')  return newRole !== 'superadmin';
+  if (actorRole === 'owner') return true;
+  if (actorRole === 'superadmin') return newRole !== 'owner';
+  if (actorRole === 'encargado')  return newRole !== 'superadmin' && newRole !== 'owner';
   return false;
 }

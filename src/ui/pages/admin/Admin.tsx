@@ -54,6 +54,7 @@ import PetForm from '@ui/components/PetForm';
 import UserManagement from '@ui/pages/admin/UserManagement';
 import SettingsManager from '@ui/pages/admin/SettingsManager';
 import AnnouncementsManager from '@ui/components/AnnouncementsManager';
+import DomainAlert from '@ui/components/DomainAlert';
 import { useAuth } from '@ui/context/AuthContext';
 import { get, del, formatApiError } from '@core/api/client';
 import { ROLE_LEVEL } from '@core/types/user';
@@ -160,6 +161,8 @@ export default function Admin() {
       <Navbar />
 
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, flexGrow: 1 }}>
+        <DomainAlert />
+        
         {/* Header Admin */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
           {/* Hamburger Menu solo en móvil */}

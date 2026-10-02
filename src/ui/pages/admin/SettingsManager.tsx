@@ -10,7 +10,14 @@ import CircularProgress from '@mui/material/CircularProgress';
 import SaveIcon from '@mui/icons-material/Save';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid2';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import { get, put, formatApiError } from '@core/api/client';
+import { useAuth } from '@ui/context/AuthContext';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
 import type { Settings } from '@core/types/settings';
 
@@ -25,11 +32,18 @@ const validationSchema = Yup.object({
     facebook: Yup.string().url('Debe ser una URL válida').nullable(),
     twitter: Yup.string().url('Debe ser una URL válida').nullable(),
   }),
+  domainExpirationDate: Yup.string().nullable(),
+  domainAlertEnabled: Yup.boolean().nullable(),
 });
 
 export default function SettingsManager() {
+  const { user } = useAuth();
+  const isOwner = user?.role === 'owner';
   const qc = useQueryClient();
   const [successMsg, setSuccessMsg] = useState('');
+  
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingValues, setPendingValues] = useState<Settings | null>(null);
 
   const { data, isLoading, isError } = useQuery<Settings>({
     queryKey: ['settings'],
@@ -54,9 +68,29 @@ export default function SettingsManager() {
     enableReinitialize: true,
     validationSchema,
     onSubmit: (values) => {
-      mutation.mutate(values);
+      // Check if domain settings changed
+      const domainChanged = data?.domainExpirationDate !== values.domainExpirationDate || data?.domainAlertEnabled !== values.domainAlertEnabled;
+      if (domainChanged && isOwner) {
+        setPendingValues(values);
+        setConfirmDialogOpen(true);
+      } else {
+        mutation.mutate(values);
+      }
     },
   });
+
+  const handleConfirmSave = () => {
+    if (pendingValues) {
+      mutation.mutate(pendingValues);
+    }
+    setConfirmDialogOpen(false);
+  };
+  
+  const handleDomainRenew = () => {
+    const current = new Date(formik.values.domainExpirationDate || DEFAULT_SETTINGS.domainExpirationDate!);
+    current.setFullYear(current.getFullYear() + 1);
+    formik.setFieldValue('domainExpirationDate', current.toISOString().split('T')[0] + 'T00:00:00Z');
+  };
 
   if (isLoading) return <CircularProgress />;
   if (isError) return <Alert severity="error">{formatApiError(mutation.error, 'Error al cargar la configuración.')}</Alert>;
@@ -180,6 +214,50 @@ export default function SettingsManager() {
             helperText={(formik.touched.social_links as any)?.twitter && (formik.errors.social_links as any)?.twitter}
           />
         </Grid>
+        
+        {isOwner && (
+          <Grid size={{ xs: 12 }}>
+            <Typography variant="subtitle1" fontWeight={700} mt={2} mb={1}>
+              Gestión de Dominio (Solo Owner)
+            </Typography>
+            <Grid container spacing={3} alignItems="center">
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Fecha de Expiración del Dominio"
+                  name="domainExpirationDate"
+                  type="date"
+                  value={formik.values.domainExpirationDate ? formik.values.domainExpirationDate.split('T')[0] : ''}
+                  onChange={(e) => {
+                    const d = e.target.value;
+                    if (d) {
+                      formik.setFieldValue('domainExpirationDate', d + 'T00:00:00Z');
+                    }
+                  }}
+                  onBlur={formik.handleBlur}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Button variant="outlined" onClick={handleDomainRenew}>
+                  Renovar +1 Año (Autocompletar)
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={Boolean(formik.values.domainAlertEnabled)}
+                      onChange={(e) => formik.setFieldValue('domainAlertEnabled', e.target.checked)}
+                      name="domainAlertEnabled"
+                    />
+                  }
+                  label="Habilitar alerta de expiración de dominio"
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+        )}
       </Grid>
 
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
@@ -193,6 +271,17 @@ export default function SettingsManager() {
           Guardar Configuración
         </Button>
       </Box>
+
+      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
+        <DialogTitle>Confirmar actualización</DialogTitle>
+        <DialogContent>
+          ¿Confirmar actualización de vigencia del dominio? La alerta se recalculará automáticamente según la fecha seleccionada.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialogOpen(false)} color="inherit">Cancelar</Button>
+          <Button onClick={handleConfirmSave} variant="contained" color="primary">Confirmar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
