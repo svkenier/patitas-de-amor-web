@@ -14,18 +14,26 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormControl from '@mui/material/FormControl';
+import Switch from '@mui/material/Switch';
+import DomainAlert from '@ui/components/DomainAlert';
 import { get, put, formatApiError } from '@core/api/client';
 import type { Settings } from '@core/types/settings';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
 
 export default function DomainManager() {
   const qc = useQueryClient();
+  const [renewalMode, setRenewalMode] = useState<'auto' | 'manual'>('auto');
   const [renewalYears, setRenewalYears] = useState<number>(1);
+  const [manualDate, setManualDate] = useState<string>('');
+  
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   
-  // Para permitir edición manual si se requiere
-  const [manualDate, setManualDate] = useState<string | null>(null);
+  const [previewAlert, setPreviewAlert] = useState(false);
 
   const { data: settings, isLoading, isError } = useQuery<Settings>({
     queryKey: ['settings'],
@@ -42,7 +50,6 @@ export default function DomainManager() {
     onSuccess: () => {
       setSuccessMsg('Renovación registrada exitosamente.');
       setConfirmOpen(false);
-      setManualDate(null);
       setTimeout(() => setSuccessMsg(''), 3000);
       void qc.invalidateQueries({ queryKey: ['settings'] });
     },
@@ -52,28 +59,38 @@ export default function DomainManager() {
   if (isError) return <Alert severity="error">Error al cargar la configuración de dominio.</Alert>;
 
   const currentSettings = settings || DEFAULT_SETTINGS;
-  const currentExpirationStr = currentSettings.domainExpirationDate || DEFAULT_SETTINGS.domainExpirationDate!;
+  const rawBaseDate = currentSettings.domainExpirationDate || DEFAULT_SETTINGS.domainExpirationDate!;
   
-  // Use manual date if edited, otherwise current
-  const baseExpiration = manualDate !== null ? manualDate : currentExpirationStr;
-  
+  // Try to parse the base date, fallback to today if invalid
+  let baseDateObj = new Date(rawBaseDate);
+  if (isNaN(baseDateObj.getTime())) {
+    baseDateObj = new Date();
+  }
+
+  // Calculate new auto date by strictly adding years to the base date
+  const autoNewDateObj = new Date(baseDateObj.getTime());
+  autoNewDateObj.setFullYear(autoNewDateObj.getFullYear() + renewalYears);
+
+  // Manual date object
+  let manualDateObj = new Date(manualDate);
+  if (isNaN(manualDateObj.getTime())) {
+    manualDateObj = new Date(baseDateObj.getTime());
+  }
+
+  const finalNewDateObj = renewalMode === 'auto' ? autoNewDateObj : manualDateObj;
+
   const today = new Date();
-  const expDateObj = new Date(baseExpiration);
-  
-  const diffTime = expDateObj.getTime() - today.getTime();
+  const diffTime = baseDateObj.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   const options = { year: 'numeric', month: 'long', day: '2-digit' } as const;
-  const formattedCurrentDate = expDateObj.toLocaleDateString('es-ES', options);
-  
-  const newExpDateObj = new Date(baseExpiration);
-  newExpDateObj.setFullYear(newExpDateObj.getFullYear() + renewalYears);
-  const formattedNewDate = newExpDateObj.toLocaleDateString('es-ES', options);
+  const formattedCurrentDate = baseDateObj.toLocaleDateString('es-ES', options);
+  const formattedNewDate = finalNewDateObj.toLocaleDateString('es-ES', options);
 
   const handleConfirm = () => {
     mutation.mutate({
       ...currentSettings,
-      domainExpirationDate: newExpDateObj.toISOString().split('T')[0] + 'T00:00:00Z'
+      domainExpirationDate: finalNewDateObj.toISOString().split('T')[0] + 'T00:00:00Z'
     });
   };
 
@@ -88,6 +105,20 @@ export default function DomainManager() {
 
       {successMsg && <Alert severity="success" sx={{ mb: 3 }}>{successMsg}</Alert>}
       {mutation.isError && <Alert severity="error" sx={{ mb: 3 }}>{formatApiError(mutation.error, 'Error al procesar la renovación.')}</Alert>}
+
+      <Box sx={{ mb: 2 }}>
+        <FormControlLabel
+          control={<Switch checked={previewAlert} onChange={(e) => setPreviewAlert(e.target.checked)} color="secondary" />}
+          label="Previsualizar diseño del banner de alerta"
+        />
+      </Box>
+      
+      {/* Muestra local de DomainAlert con prop "preview" inyectado */}
+      {previewAlert && (
+        <Box sx={{ mt: 2, mb: 4 }}>
+          <DomainAlert preview={true} />
+        </Box>
+      )}
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12 }}>
@@ -106,50 +137,75 @@ export default function DomainManager() {
 
         <Grid size={{ xs: 12 }}>
           <Typography variant="subtitle1" fontWeight={700} mt={2} mb={2}>
-            Formulario de Renovación
+            Modo de Renovación
           </Typography>
-          <Grid container spacing={3} alignItems="center">
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Fecha de Expiración Base"
-                type="date"
-                value={baseExpiration.split('T')[0]}
-                onChange={(e) => {
-                  const d = e.target.value;
-                  if (d) setManualDate(d + 'T00:00:00Z');
-                }}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                select
-                fullWidth
-                label="Periodo a Renovar"
-                value={renewalYears}
-                onChange={(e) => setRenewalYears(Number(e.target.value))}
-              >
-                <MenuItem value={1}>+1 Año</MenuItem>
-                <MenuItem value={2}>+2 Años</MenuItem>
-                <MenuItem value={3}>+3 Años</MenuItem>
-                <MenuItem value={5}>+5 Años</MenuItem>
-              </TextField>
-            </Grid>
-            
-            <Grid size={{ xs: 12 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  size="large"
-                  onClick={() => setConfirmOpen(true)}
-                >
-                  Registrar Renovación
-                </Button>
+          
+          <FormControl component="fieldset" fullWidth>
+            <RadioGroup
+              value={renewalMode}
+              onChange={(e) => setRenewalMode(e.target.value as 'auto' | 'manual')}
+            >
+              <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: renewalMode === 'auto' ? 'primary.main' : 'divider', borderRadius: 1 }}>
+                <FormControlLabel value="auto" control={<Radio />} label="Renovación automática por años (+1, +2, +3, +5)" />
+                {renewalMode === 'auto' && (
+                  <Box sx={{ mt: 2, ml: 4 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Periodo a Renovar"
+                      value={renewalYears}
+                      onChange={(e) => setRenewalYears(Number(e.target.value))}
+                      sx={{ mb: 2 }}
+                    >
+                      <MenuItem value={1}>+1 Año</MenuItem>
+                      <MenuItem value={2}>+2 Años</MenuItem>
+                      <MenuItem value={3}>+3 Años</MenuItem>
+                      <MenuItem value={5}>+5 Años</MenuItem>
+                    </TextField>
+                    <Typography variant="body2" color="text.secondary">
+                      Fecha de corte actual: <strong>{formattedCurrentDate}</strong> &rarr; Nueva fecha calculada: <strong>{formattedNewDate}</strong>
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-            </Grid>
-          </Grid>
+
+              <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: renewalMode === 'manual' ? 'primary.main' : 'divider', borderRadius: 1 }}>
+                <FormControlLabel value="manual" control={<Radio />} label="Ingresar fecha exacta del registrador (Manual)" />
+                {renewalMode === 'manual' && (
+                  <Box sx={{ mt: 2, ml: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Fecha de Expiración Exacta"
+                      type="date"
+                      value={manualDate ? manualDate.split('T')[0] : ''}
+                      onChange={(e) => {
+                        const d = e.target.value;
+                        setManualDate(d ? d + 'T00:00:00Z' : '');
+                      }}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Box>
+                )}
+              </Box>
+            </RadioGroup>
+          </FormControl>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              size="large"
+              onClick={() => {
+                if (renewalMode === 'manual' && !manualDate) {
+                  return; // prevent if invalid
+                }
+                setConfirmOpen(true);
+              }}
+              disabled={renewalMode === 'manual' && !manualDate}
+            >
+              Registrar Renovación
+            </Button>
+          </Box>
         </Grid>
       </Grid>
 
@@ -160,7 +216,7 @@ export default function DomainManager() {
             <strong>Fecha actual registrada:</strong> {formattedCurrentDate}
           </Typography>
           <Typography variant="body1" color="primary" fontWeight={600}>
-            <strong>Nueva fecha tras renovación:</strong> {formattedNewDate}
+            <strong>Nueva fecha que se guardará:</strong> {formattedNewDate}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             La alerta del sistema se actualizará automáticamente según la nueva fecha.
