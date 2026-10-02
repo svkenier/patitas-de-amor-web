@@ -99,7 +99,7 @@ export default function DomainManager() {
   const handleConfirm = () => {
     mutation.mutate({
       ...currentSettings,
-      domainExpirationDate: serializeLocalDate(finalNewDateObj) + 'T00:00:00Z'
+      domainExpirationDate: serializeLocalDate(finalNewDateObj)
     });
   };
 
