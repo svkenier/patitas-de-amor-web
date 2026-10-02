@@ -83,6 +83,9 @@ export default function DomainManager() {
   const diffTime = baseDateObj.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
+  const todayStr = today.toISOString().split('T')[0];
+  const isManualDateInPast = renewalMode === 'manual' && (!manualDate || new Date(manualDate).getTime() < new Date().setHours(0,0,0,0));
+
   const options = { year: 'numeric', month: 'long', day: '2-digit' } as const;
   const formattedCurrentDate = baseDateObj.toLocaleDateString('es-ES', options);
   const formattedNewDate = finalNewDateObj.toLocaleDateString('es-ES', options);
@@ -183,6 +186,9 @@ export default function DomainManager() {
                         setManualDate(d ? d + 'T00:00:00Z' : '');
                       }}
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: todayStr }}
+                      error={isManualDateInPast}
+                      helperText={isManualDateInPast ? 'La fecha de renovación debe ser posterior al día de hoy' : ''}
                     />
                   </Box>
                 )}
@@ -196,12 +202,12 @@ export default function DomainManager() {
               color="primary" 
               size="large"
               onClick={() => {
-                if (renewalMode === 'manual' && !manualDate) {
+                if (isManualDateInPast) {
                   return; // prevent if invalid
                 }
                 setConfirmOpen(true);
               }}
-              disabled={renewalMode === 'manual' && !manualDate}
+              disabled={isManualDateInPast}
             >
               Registrar Renovación
             </Button>
