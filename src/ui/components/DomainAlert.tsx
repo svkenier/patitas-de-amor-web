@@ -8,6 +8,11 @@ import type { Settings } from '@core/types/settings';
 export default function DomainAlert({ preview = false }: { preview?: boolean }) {
   const { user } = useAuth();
   
+  const parseLocalDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const { data: settings } = useQuery<Settings>({
     queryKey: ['settings'],
     queryFn: async () => {
@@ -20,7 +25,8 @@ export default function DomainAlert({ preview = false }: { preview?: boolean }) 
   if (!settings || !settings.domainExpirationDate) return null;
 
   const today = new Date();
-  const expiration = new Date(settings.domainExpirationDate);
+  today.setHours(0, 0, 0, 0);
+  const expiration = parseLocalDate(settings.domainExpirationDate);
   const diffTime = expiration.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   const shouldShowRealAlert = diffDays <= 15 && diffDays > 0 && settings.domainAlertEnabled;

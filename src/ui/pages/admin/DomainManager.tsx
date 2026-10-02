@@ -24,6 +24,17 @@ import { get, put, formatApiError } from '@core/api/client';
 import type { Settings } from '@core/types/settings';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
 
+const parseLocalDate = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return new Date();
+  return new Date(year, month - 1, day);
+};
+
+const serializeLocalDate = (dateObj: Date) => {
+  return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+};
+
 export default function DomainManager() {
   const qc = useQueryClient();
   const [renewalMode, setRenewalMode] = useState<'auto' | 'manual'>('auto');
@@ -61,30 +72,25 @@ export default function DomainManager() {
   const currentSettings = settings || DEFAULT_SETTINGS;
   const rawBaseDate = currentSettings.domainExpirationDate || DEFAULT_SETTINGS.domainExpirationDate!;
   
-  // Try to parse the base date, fallback to today if invalid
-  let baseDateObj = new Date(rawBaseDate);
-  if (isNaN(baseDateObj.getTime())) {
-    baseDateObj = new Date();
-  }
+  const baseDateObj = parseLocalDate(rawBaseDate);
 
   // Calculate new auto date by strictly adding years to the base date
-  const autoNewDateObj = new Date(baseDateObj.getTime());
-  autoNewDateObj.setFullYear(autoNewDateObj.getFullYear() + renewalYears);
+  const autoNewDateObj = new Date(baseDateObj.getFullYear() + renewalYears, baseDateObj.getMonth(), baseDateObj.getDate());
 
   // Manual date object
-  let manualDateObj = new Date(manualDate);
-  if (isNaN(manualDateObj.getTime())) {
-    manualDateObj = new Date(baseDateObj.getTime());
-  }
+  const manualDateObj = manualDate ? parseLocalDate(manualDate) : new Date(baseDateObj.getTime());
 
   const finalNewDateObj = renewalMode === 'auto' ? autoNewDateObj : manualDateObj;
 
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const diffTime = baseDateObj.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  const todayStr = today.toISOString().split('T')[0];
-  const isManualDateInPast = renewalMode === 'manual' && (!manualDate || new Date(manualDate).getTime() < new Date().setHours(0,0,0,0));
+  const todayStr = serializeLocalDate(today);
+  
+  const isManualDateInPast = renewalMode === 'manual' && (!manualDate || manualDateObj.getTime() < today.getTime());
 
   const options = { year: 'numeric', month: 'long', day: '2-digit' } as const;
   const formattedCurrentDate = baseDateObj.toLocaleDateString('es-ES', options);
@@ -93,7 +99,7 @@ export default function DomainManager() {
   const handleConfirm = () => {
     mutation.mutate({
       ...currentSettings,
-      domainExpirationDate: finalNewDateObj.toISOString().split('T')[0] + 'T00:00:00Z'
+      domainExpirationDate: serializeLocalDate(finalNewDateObj) + 'T00:00:00Z'
     });
   };
 
@@ -180,11 +186,8 @@ export default function DomainManager() {
                       fullWidth
                       label="Fecha de Expiración Exacta"
                       type="date"
-                      value={manualDate ? manualDate.split('T')[0] : ''}
-                      onChange={(e) => {
-                        const d = e.target.value;
-                        setManualDate(d ? d + 'T00:00:00Z' : '');
-                      }}
+                      value={manualDate}
+                      onChange={(e) => setManualDate(e.target.value)}
                       InputLabelProps={{ shrink: true }}
                       inputProps={{ min: todayStr }}
                       error={isManualDateInPast}
