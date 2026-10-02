@@ -40,6 +40,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PetsRoundedIcon from '@mui/icons-material/PetsRounded';
 import MenuIcon from '@mui/icons-material/Menu';
+import PublicIcon from '@mui/icons-material/Public';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -53,6 +54,7 @@ import Navbar from '@ui/components/Navbar';
 import PetForm from '@ui/components/PetForm';
 import UserManagement from '@ui/pages/admin/UserManagement';
 import SettingsManager from '@ui/pages/admin/SettingsManager';
+import DomainManager from '@ui/pages/admin/DomainManager';
 import AnnouncementsManager from '@ui/components/AnnouncementsManager';
 import DomainAlert from '@ui/components/DomainAlert';
 import { useAuth } from '@ui/context/AuthContext';
@@ -155,6 +157,7 @@ export default function Admin() {
 
   const canManageUsers = user && ROLE_LEVEL[user.role] >= ROLE_LEVEL['encargado'];
   const isSuperadmin   = user && ROLE_LEVEL[user.role] >= ROLE_LEVEL['superadmin'];
+  const isOwner        = user && user.role === 'owner';
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
@@ -192,6 +195,7 @@ export default function Admin() {
             <Tab label="Eventos y Anuncios" />
             {canManageUsers && <Tab label="Usuarios" />}
             {isSuperadmin && <Tab label="Configuración del Refugio" />}
+            {isOwner && <Tab icon={<PublicIcon sx={{ mr: 1, verticalAlign: 'middle' }} />} label={<span style={{display: 'inline-flex', alignItems: 'center'}}>Dominio</span>} sx={{ minHeight: 'auto', flexDirection: 'row' }} />}
           </Tabs>
         </Box>
 
@@ -222,6 +226,13 @@ export default function Admin() {
               <ListItem disablePadding>
                 <ListItemButton selected={tabIndex === (canManageUsers ? 3 : 2)} onClick={() => { setTabIndex(canManageUsers ? 3 : 2); setDrawerOpen(false); }}>
                   <ListItemText primary="Configuración del Refugio" />
+                </ListItemButton>
+              </ListItem>
+            )}
+            {isOwner && (
+              <ListItem disablePadding>
+                <ListItemButton selected={tabIndex === (canManageUsers ? 4 : 3)} onClick={() => { setTabIndex(canManageUsers ? 4 : 3); setDrawerOpen(false); }}>
+                  <ListItemText primary="Dominio" />
                 </ListItemButton>
               </ListItem>
             )}
@@ -462,6 +473,13 @@ export default function Admin() {
         {isSuperadmin && (
           <TabPanel value={tabIndex} index={canManageUsers ? 3 : 2}>
             <SettingsManager />
+          </TabPanel>
+        )}
+
+        {/* ── PANEL DOMINIO ──────────────────────────────────────────────── */}
+        {isOwner && (
+          <TabPanel value={tabIndex} index={canManageUsers ? 4 : 3}>
+            <DomainManager />
           </TabPanel>
         )}
       </Container>

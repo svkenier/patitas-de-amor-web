@@ -17,13 +17,6 @@ export default function DomainAlert() {
     enabled: user?.role === 'owner' || user?.role === 'superadmin',
   });
 
-  const { data: isPreview = false } = useQuery<boolean>({
-    queryKey: ['domainPreview'],
-    staleTime: Infinity,
-  });
-
-  const isOwner = user?.role === 'owner';
-
   if (!settings || !settings.domainExpirationDate) return null;
 
   const today = new Date();
@@ -32,13 +25,11 @@ export default function DomainAlert() {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   const shouldShowRealAlert = diffDays <= 15 && diffDays > 0 && settings.domainAlertEnabled;
-  const shouldShowPreview = isOwner && isPreview;
 
-  if (shouldShowRealAlert || shouldShowPreview) {
+  if (shouldShowRealAlert) {
     return (
       <Box sx={{ mb: 3 }}>
         <Alert severity="warning" variant="filled">
-          {shouldShowPreview && <strong>[MODO PREVISUALIZACIÓN] </strong>}
           Aviso administrativo: El servicio de dominio web anual se encuentra próximo a su fecha de vencimiento. Para asegurar la continuidad operativa de la plataforma sin interrupciones, por favor comuníquese a la brevedad con el administrador técnico del sistema para coordinar la renovación.
         </Alert>
       </Box>
