@@ -191,7 +191,13 @@ export default function DomainManager() {
                       InputLabelProps={{ shrink: true }}
                       inputProps={{ min: todayStr }}
                       error={isManualDateInPast}
-                      helperText={isManualDateInPast ? 'La fecha de renovación debe ser posterior al día de hoy' : ''}
+                      helperText={
+                        isManualDateInPast
+                          ? 'La fecha de renovación debe ser posterior al día de hoy'
+                          : manualDate
+                          ? `📅 Fecha seleccionada: ${manualDateObj.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })}`
+                          : ''
+                      }
                     />
                   </Box>
                 )}
