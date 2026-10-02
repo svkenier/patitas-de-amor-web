@@ -45,6 +45,11 @@ export default function SettingsManager() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<Settings | null>(null);
 
+  const { data: isPreview = false } = useQuery<boolean>({
+    queryKey: ['domainPreview'],
+    staleTime: Infinity,
+  });
+
   const { data, isLoading, isError } = useQuery<Settings>({
     queryKey: ['settings'],
     queryFn: async () => {
@@ -253,6 +258,19 @@ export default function SettingsManager() {
                     />
                   }
                   label="Habilitar alerta de expiración de dominio"
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={isPreview}
+                      onChange={(e) => qc.setQueryData(['domainPreview'], e.target.checked)}
+                      name="previewDomainAlert"
+                      color="secondary"
+                    />
+                  }
+                  label="Previsualizar banner en panel (Modo de prueba)"
                 />
               </Grid>
             </Grid>
