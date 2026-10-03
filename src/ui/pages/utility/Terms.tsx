@@ -11,6 +11,7 @@ import GavelIcon from '@mui/icons-material/Gavel';
 import Navbar from '@ui/components/Navbar';
 import Footer from '@ui/components/Footer';
 import AnimatedSection from '@ui/components/AnimatedSection';
+import SEO from '@core/media/SEO';
 
 const SECTIONS = [
   {
@@ -38,6 +39,7 @@ const SECTIONS = [
 export default function Terms() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <SEO title="Términos y Condiciones · Patitas de Amor Bqto" description="Términos y Condiciones de uso de la plataforma Patitas de Amor Barquisimeto." url="/terminos" />
       <Navbar />
 
       {/* Encabezado */}

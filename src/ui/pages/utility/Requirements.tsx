@@ -67,7 +67,7 @@ export default function Requirements() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <SEO 
-        title="Requisitos de Adopción" 
+        title="Requisitos · Patitas de Amor Bqto" 
         description="Conoce los requisitos de adopción de Patitas de Amor Barquisimeto. Queremos garantizar el bienestar permanente de nuestras mascotas rescatadas."
         url="/requisitos"
       />

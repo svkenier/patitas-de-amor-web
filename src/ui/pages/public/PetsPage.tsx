@@ -104,7 +104,7 @@ export default function PetsPage() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <SEO 
-        title="Mascotas en Adopción | PetRescue" 
+        title="Mascotas · Patitas de Amor Bqto" 
         description="Conoce a los peludos que están esperando una familia y un hogar lleno de amor."
         url="/mascotas"
       />

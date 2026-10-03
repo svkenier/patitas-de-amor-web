@@ -12,7 +12,7 @@ import AnimatedSection from '@ui/components/AnimatedSection';
 export default function NotFound() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <SEO title="Página no encontrada" description="La página que buscas no existe." />
+      <SEO title="Página no encontrada · Patitas de Amor Bqto" description="La página que buscas no existe." />
       <Navbar />
 
       <Box

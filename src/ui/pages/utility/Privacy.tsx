@@ -12,6 +12,7 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import Navbar from '@ui/components/Navbar';
 import Footer from '@ui/components/Footer';
 import AnimatedSection from '@ui/components/AnimatedSection';
+import SEO from '@core/media/SEO';
 
 const SECTIONS = [
   {
@@ -39,6 +40,7 @@ const SECTIONS = [
 export default function Privacy() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <SEO title="Políticas de Privacidad · Patitas de Amor Bqto" description="Políticas de privacidad de Patitas de Amor Barquisimeto." url="/privacidad" />
       <Navbar />
 
       {/* Encabezado */}
