@@ -22,6 +22,7 @@ import Navbar                 from '@ui/components/Navbar';
 import Footer                 from '@ui/components/Footer';
 import AnimatedSection        from '@ui/components/AnimatedSection';
 import SEO                    from '@core/media/SEO';
+import { Helmet }             from 'react-helmet-async';
 import { getGenericInfoUrl, openWhatsApp } from '@ui/utils/whatsapp';
 import { useQuery } from '@tanstack/react-query';
 import { get } from '@core/api/client';
@@ -64,6 +65,37 @@ export default function Requirements() {
 
   const phone = settings?.whatsapp || DEFAULT_SETTINGS.whatsapp;
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "¿Cuáles son los requisitos de adopción?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": REQUISITOS.join(' ')
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Qué restricciones existen para adoptar?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": RESTRICCIONES.join(' ')
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Cómo es el proceso de adopción?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": PASOS.map(p => `${p.n} ${p.title}: ${p.desc}`).join(' ')
+        }
+      }
+    ]
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <SEO 
@@ -71,6 +103,11 @@ export default function Requirements() {
         description="Conoce los requisitos de adopción de Patitas de Amor Barquisimeto. Queremos garantizar el bienestar permanente de nuestras mascotas rescatadas."
         url="/requisitos"
       />
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(faqSchema)}
+        </script>
+      </Helmet>
       <Navbar />
 
       {/* Encabezado */}

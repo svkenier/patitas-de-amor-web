@@ -25,6 +25,7 @@ import Navbar         from '@ui/components/Navbar';
 import Footer         from '@ui/components/Footer';
 import AnimatedSection from '@ui/components/AnimatedSection';
 import SEO            from '@core/media/SEO';
+import { Helmet }     from 'react-helmet-async';
 import { getPetUrl, openWhatsApp } from '@ui/utils/whatsapp';
 import type { BaseRecord } from '@core/types/record';
 import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
@@ -165,9 +166,25 @@ export default function PetDetailPage() {
   const esterilizado = attributes['esterilizado'] as boolean | undefined;
   const desparasitado = attributes['desparasitado'] as boolean | undefined;
 
+  const petImage = allImages.length > 0 ? (allImages[0].startsWith('http') ? allImages[0] : `https://patitasdeamorbqto.com${allImages[0]}`) : "https://patitasdeamorbqto.com/hero-desktop.webp";
+  
+  const petSchema = {
+    "@context": "https://schema.org",
+    "@type": "Thing",
+    "name": `Mascota en adopción: ${record.title || 'Desconocido'}`,
+    "description": record.description || 'Adopta a esta mascota rescatada en Barquisimeto.',
+    "image": petImage,
+    "url": `https://patitasdeamorbqto.com/mascotas/${record.id}`
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <SEO title={`${record.title || 'Mascota'} · Patitas de Amor Bqto`} description={record.description?.substring(0, 160) || 'Adopta a esta mascota rescatada.'} url={`/mascotas/${record.id}`} />
+      <SEO title={`${record.title || 'Mascota'} · Patitas de Amor Bqto`} description={record.description?.substring(0, 160) || 'Adopta a esta mascota rescatada.'} url={`/mascotas/${record.id}`} image={allImages[0]} />
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(petSchema)}
+        </script>
+      </Helmet>
       <Navbar />
 
       <Box sx={{ py: { xs: 3, md: 6 }, flexGrow: 1 }}>
