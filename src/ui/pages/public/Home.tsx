@@ -147,9 +147,10 @@ export default function Home() {
         component="section"
         sx={{
           position: 'relative',
-          minHeight: { xs: '75vh', md: '80vh' },
+          minHeight: { xs: 'calc(100svh - 56px)', md: 'calc(100vh - 64px)' },
           display: 'flex',
-          alignItems: { xs: 'flex-start', md: 'center' },
+          flexDirection: 'column',
+          justifyContent: { xs: 'flex-start', md: 'center' },
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -178,7 +179,7 @@ export default function Home() {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: { xs: 'center 36%', md: 'right 77%' }
+              objectPosition: { xs: 'center bottom', md: 'right 77%' }
             }
           }}
         >
@@ -193,8 +194,8 @@ export default function Home() {
             height="1200"
           />
         </Box>
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, pt: { xs: 6, sm: 8, md: 0 } }}>
-          <Box sx={{ maxWidth: { xs: '100%', sm: '90%', md: '500px' } }}>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, pt: { xs: 4, sm: 6, md: 0 } }}>
+          <Box sx={{ maxWidth: { xs: '100%', md: '580px', lg: '650px' } }}>
             <AnimatedSection>
               <Box sx={{
                 mb: 3,
@@ -203,8 +204,8 @@ export default function Home() {
                 justifyContent: 'center',
                 width: 'fit-content',
                 maxWidth: '100%',
-                px: { xs: 1.5, sm: 2.5 },
-                py: { xs: 0.6, sm: 0.8 },
+                px: { xs: 2, md: 3 },
+                py: { xs: 0.8, md: 1 },
                 bgcolor: 'rgba(53, 180, 221, 0.22)',
                 color: '#FFFFFF',
                 border: '1px solid rgba(53, 180, 221, 0.50)',
@@ -213,7 +214,8 @@ export default function Home() {
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
               }}>
                 <Typography component="span" sx={{
-                  fontSize: { xs: '9px', sm: '11px', md: '12.5px' },
+                  color: '#FFFFFF !important',
+                  fontSize: { xs: '11px', sm: '12px', md: '13.5px', lg: '14px' },
                   fontWeight: 700,
                   letterSpacing: { xs: '0.04em', sm: '0.08em' },
                   lineHeight: 1.2,
@@ -223,7 +225,7 @@ export default function Home() {
                   textOverflow: 'clip',
                   textAlign: 'center',
                   display: 'block',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.25)'
+                  textShadow: '0 1px 3px rgba(0,0,0,0.6)'
                 }}>
                   RESCATE · REHABILITACIÓN · ADOPCIÓN
                 </Typography>
@@ -237,7 +239,11 @@ export default function Home() {
                 fontWeight={800}
                 color="common.white"
                 mb={2.5}
-                sx={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+                sx={{ 
+                  textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                  fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem', lg: '3.25rem' },
+                  lineHeight: { xs: 1.25, md: 1.18 }
+                }}
               >
                 Dale una segunda oportunidad a quien más lo necesita
               </Typography>
@@ -249,7 +255,8 @@ export default function Home() {
                 mb={4.5}
                 sx={{
                   color: 'rgba(255, 255, 255, 0.9)',
-                  fontSize: { xs: '1rem', md: '1.2rem' },
+                  fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.15rem' },
+                  lineHeight: 1.6,
                 }}
               >
                 En Patitas de Amor rescatamos, rehabilitamos y buscamos hogares responsables para perros y gatos en Barquisimeto. Juntos, salvamos vidas.
@@ -268,6 +275,9 @@ export default function Home() {
                     bgcolor: '#0f4c81', // Azul Marino / Cobalto
                     color: '#FFFFFF',
                     fontWeight: 700,
+                    px: { xs: 2.5, md: 3.5 },
+                    py: { xs: 1, md: 1.4 },
+                    fontSize: { xs: '0.9rem', md: '1rem' },
                     boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                     '&:hover': {
                       bgcolor: '#0a3d6b'
@@ -285,6 +295,9 @@ export default function Home() {
                     color: '#FFFFFF',
                     borderColor: 'rgba(255, 255, 255, 0.5)',
                     fontWeight: 600,
+                    px: { xs: 2.5, md: 3.5 },
+                    py: { xs: 1, md: 1.4 },
+                    fontSize: { xs: '0.9rem', md: '1rem' },
                     '&:hover': {
                       bgcolor: 'rgba(255, 255, 255, 0.1)',
                       borderColor: '#FFFFFF',
