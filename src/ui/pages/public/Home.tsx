@@ -18,7 +18,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Grid from '@mui/material/Grid2';
-import Chip from '@mui/material/Chip';
+
 import Card from '@mui/material/Card';
 import { useTheme, alpha } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -194,27 +194,40 @@ export default function Home() {
           />
         </Box>
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, pt: { xs: 6, sm: 8, md: 0 } }}>
-          <Box sx={{ maxWidth: { xs: '80%', sm: '70%', md: '500px' } }}>
+          <Box sx={{ maxWidth: { xs: '100%', sm: '90%', md: '500px' } }}>
             <AnimatedSection>
-              <Chip
-                label="Rescate · Rehabilitación · Adopción · Barquisimeto"
-                sx={{
-                  mb: 3,
-                  height: 'auto',
-                  '& .MuiChip-label': {
-                    px: 2.5,
-                    py: 0.8,
-                  },
-                  bgcolor: 'rgba(53, 180, 221, 0.22)',
-                  color: '#FFFFFF',
-                  border: '1px solid rgba(53, 180, 221, 0.50)',
-                  fontWeight: 600,
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: '9999px',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }}
-              />
+              <Box sx={{
+                mb: 3,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 'fit-content',
+                maxWidth: '100%',
+                px: { xs: 1.5, sm: 2.5 },
+                py: { xs: 0.6, sm: 0.8 },
+                bgcolor: 'rgba(53, 180, 221, 0.22)',
+                color: '#FFFFFF',
+                border: '1px solid rgba(53, 180, 221, 0.50)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: '9999px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}>
+                <Typography component="span" sx={{
+                  fontSize: { xs: '9px', sm: '11px', md: '12.5px' },
+                  fontWeight: 700,
+                  letterSpacing: { xs: '0.04em', sm: '0.08em' },
+                  lineHeight: 1.2,
+                  textTransform: 'uppercase',
+                  whiteSpace: 'normal',
+                  overflow: 'visible',
+                  textOverflow: 'clip',
+                  textAlign: 'center',
+                  display: 'block',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.25)'
+                }}>
+                  RESCATE · REHABILITACIÓN · ADOPCIÓN
+                </Typography>
+              </Box>
             </AnimatedSection>
 
             <AnimatedSection delay={80}>
