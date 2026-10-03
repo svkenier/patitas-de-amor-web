@@ -17,13 +17,13 @@ export default function SEO({
   type = 'website',
   schemaType = 'Organization'
 }: SEOProps) {
-  let baseUrl = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://boilerplate.local');
+  let baseUrl = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://patitasdeamorbqto.com');
   // Limpiar posible formato Markdown accidental como "[https://...](https://...)"
   baseUrl = baseUrl.replace(/^\[.*\]\((.*)\)$/, '$1');
   const finalUrl = url ? (url.startsWith('http') ? url : `${baseUrl}${url}`) : baseUrl;
 
-  const siteName = import.meta.env.VITE_SITE_NAME || 'Platform Boilerplate';
-  const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+  const siteName = import.meta.env.VITE_SITE_NAME || 'Patitas de Amor Bqto';
+  const fullTitle = title.includes(siteName) ? title : `${title} · ${siteName}`;
 
   const structuredData = {
     "@context": "https://schema.org",

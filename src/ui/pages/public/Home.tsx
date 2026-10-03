@@ -137,7 +137,7 @@ export default function Home() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <SEO 
-        title="Inicio — Patitas de Amor Barquisimeto" 
+        title="Inicio · Patitas de Amor Bqto" 
         description="Fundación de rescate y adopción responsable de perros y gatos en Barquisimeto. Encuentra a tu compañero ideal." 
       />
       <Navbar />
