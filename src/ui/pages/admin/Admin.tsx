@@ -86,7 +86,7 @@ export default function Admin() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    document.title = 'Panel de Administración — Patitas de Amor';
+    document.title = 'Panel de Administración · Patitas de Amor Bqto';
   }, []);
 
   const [tabIndex, setTabIndex] = useState(0);

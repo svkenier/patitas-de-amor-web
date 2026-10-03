@@ -23,6 +23,7 @@ import Link from '@mui/material/Link';
 import Divider from '@mui/material/Divider';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon   from '@mui/icons-material/Lock';
+import SEO from '@core/media/SEO';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import IconButton from '@mui/material/IconButton';
@@ -85,6 +86,7 @@ export default function Login() {
         p: 2,
       }}
     >
+      <SEO title="Iniciar Sesión · Patitas de Amor Bqto" description="Acceso exclusivo para el personal de Patitas de Amor Barquisimeto." url="/login" />
       <Container maxWidth="xs">
         {/* Logo y Encabezado */}
         <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

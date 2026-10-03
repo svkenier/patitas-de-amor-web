@@ -24,6 +24,7 @@ import PetsIcon       from '@mui/icons-material/Pets';
 import Navbar         from '@ui/components/Navbar';
 import Footer         from '@ui/components/Footer';
 import AnimatedSection from '@ui/components/AnimatedSection';
+import SEO            from '@core/media/SEO';
 import { getPetUrl, openWhatsApp } from '@ui/utils/whatsapp';
 import type { BaseRecord } from '@core/types/record';
 import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
@@ -104,6 +105,7 @@ export default function PetDetailPage() {
   if (isLoading) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <SEO title="Cargando... · Patitas de Amor Bqto" description="Cargando ficha de mascota." />
         <Navbar />
         <Container maxWidth="lg" sx={{ py: 6, flexGrow: 1 }}>
           <Grid container spacing={4}>
@@ -129,6 +131,7 @@ export default function PetDetailPage() {
   if (isError || !record) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <SEO title="Mascota no encontrada · Patitas de Amor Bqto" description="No se encontró la ficha de la mascota." />
         <Navbar />
         <Container maxWidth="sm" sx={{ py: 10, textAlign: 'center', flexGrow: 1 }}>
           <Typography fontSize="4rem" mb={2}>🔍</Typography>
@@ -164,6 +167,7 @@ export default function PetDetailPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <SEO title={`${record.title || 'Mascota'} · Patitas de Amor Bqto`} description={record.description?.substring(0, 160) || 'Adopta a esta mascota rescatada.'} url={`/mascotas/${record.id}`} />
       <Navbar />
 
       <Box sx={{ py: { xs: 3, md: 6 }, flexGrow: 1 }}>

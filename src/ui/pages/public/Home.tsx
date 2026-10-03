@@ -137,7 +137,7 @@ export default function Home() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <SEO 
-        title="Inicio · Patitas de Amor Bqto" 
+        title="Adopción y Refugio Animal · Patitas de Amor Bqto" 
         description="Fundación de rescate y adopción responsable de perros y gatos en Barquisimeto. Encuentra a tu compañero ideal." 
       />
       <Navbar />
@@ -245,7 +245,7 @@ export default function Home() {
                   lineHeight: { xs: 1.25, md: 1.18 }
                 }}
               >
-                Dale una segunda oportunidad a quien más lo necesita
+                Adopción de perros y gatos en Barquisimeto
               </Typography>
             </AnimatedSection>
 
@@ -259,7 +259,7 @@ export default function Home() {
                   lineHeight: 1.6,
                 }}
               >
-                En Patitas de Amor rescatamos, rehabilitamos y buscamos hogares responsables para perros y gatos en Barquisimeto. Juntos, salvamos vidas.
+                Dale una segunda oportunidad a quien más lo necesita. En Patitas de Amor rescatamos y rehabilitamos peludos en situación de calle para conectar vidas con hogares llenos de amor.
               </Typography>
             </AnimatedSection>
 
