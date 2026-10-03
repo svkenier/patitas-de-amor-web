@@ -14,48 +14,24 @@ import AnimatedSection from '@ui/components/AnimatedSection';
 
 const SECTIONS = [
   {
-    title: '1. Aceptación de los términos',
-    body:  `Al navegar por este sitio web y utilizar sus servicios, usted acepta cumplir
-            con los presentes Términos y Condiciones. Si no está de acuerdo con alguno de
-            ellos, le pedimos que se abstenga de usar el sitio.`,
+    title: '1. Naturaleza de la Plataforma',
+    body:  `El sitio web de Patitas de Amor Barquisimeto actúa exclusivamente como un puente de difusión y catálogo digital sin fines de lucro. Nuestro objetivo es visibilizar a perros y gatos rescatados en situación de vulnerabilidad para facilitar su adopción responsable.`,
   },
   {
-    title: '2. Sobre el proceso de adopción',
-    body:  `La adopción de mascotas a través de petRescue es un proceso voluntario que requiere
-            cumplir con los requisitos establecidos por el refugio. El refugio se reserva el
-            derecho de rechazar solicitudes que no cumplan los criterios de bienestar animal.
-            La entrega de la mascota está sujeta a disponibilidad y evaluación del adoptante.`,
+    title: '2. Proceso y Evaluación de Adopción',
+    body:  `Iniciar contacto por una mascota no garantiza su adopción. Patitas de Amor Barquisimeto se reserva el derecho exclusivo de evaluar a los postulantes, solicitar requisitos (entrevistas, planillas) y aprobar o denegar la solicitud basándose únicamente en garantizar el bienestar físico y emocional del animal rescatado.`,
   },
   {
-    title: '3. Compromiso del adoptante',
-    body:  `Al adoptar una mascota, el adoptante se compromete a: (a) brindarle alimentación
-            adecuada, atención veterinaria y un ambiente seguro; (b) no abandonar, maltratar ni
-            re-ceder la mascota a terceros sin notificar previamente al refugio; (c) esterilizar
-            a la mascota si aún no lo está, dentro de los primeros seis (6) meses tras la adopción.`,
+    title: '3. Compromiso Inquebrantable del Adoptante',
+    body:  `Al concretar una adopción, el adoptante asume la responsabilidad legal y moral de: (a) proveer alimentación, techo y cuidados veterinarios oportunos; (b) no abandonar, regalar ni ceder al animal sin previa notificación a la fundación; y (c) cumplir obligatoriamente con la esterilización o castración en el plazo acordado.`,
   },
   {
-    title: '4. Seguimiento post-adopción',
-    body:  `El refugio podrá solicitar evidencia fotográfica o una visita de seguimiento dentro
-            del primer mes tras la adopción, con el único fin de verificar el bienestar de la
-            mascota. Esto no constituye una fiscalización punitiva, sino un acompañamiento.`,
+    title: '4. Seguimiento Post-Adopción',
+    body:  `La fundación podrá requerir, como condición de adopción, material fotográfico o visitas programadas durante los primeros meses tras la entrega, con el fin de velar por la correcta adaptación del animal a su nuevo hogar.`,
   },
   {
-    title: '5. Devolución responsable',
-    body:  `Si por circunstancias excepcionales el adoptante no puede continuar cuidando a la
-            mascota, debe contactar al refugio antes de tomar cualquier otra decisión. El refugio
-            facilitará la devolución o la reubicación responsable de la mascota.`,
-  },
-  {
-    title: '6. Limitación de responsabilidad',
-    body:  `petRescue actúa como facilitador entre mascotas en situación de calle o abandono y
-            familias adoptantes. Si bien velamos por la salud y el comportamiento de las mascotas,
-            no nos hacemos responsables de daños o imprevistos posteriores a la entrega formal.`,
-  },
-  {
-    title: '7. Modificaciones',
-    body:  `Nos reservamos el derecho de actualizar estos Términos en cualquier momento.
-            Los cambios serán efectivos desde su publicación en este sitio.
-            Se recomienda revisar esta página periódicamente.`,
+    title: '5. Limitación de Responsabilidad Técnica',
+    body:  `Patitas de Amor Barquisimeto no se hace responsable por caídas del servidor, interrupciones temporales del catálogo web por parte de nuestros proveedores (Cloudflare/GitHub), ni por fallas en la red de WhatsApp al momento de procesar solicitudes.`,
   },
 ];
 

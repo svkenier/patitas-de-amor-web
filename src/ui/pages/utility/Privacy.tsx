@@ -15,47 +15,24 @@ import AnimatedSection from '@ui/components/AnimatedSection';
 
 const SECTIONS = [
   {
-    title: '1. ¿Qué información recopilamos?',
-    body:  `Este sitio web NO almacena datos personales de los visitantes. No usamos formularios
-            de contacto web, ni bases de datos de usuarios públicos. El único canal de comunicación
-            es WhatsApp, que opera bajo sus propias políticas de privacidad (Meta, Inc.).`,
+    title: '1. ¿Qué información recopilamos del público?',
+    body:  `Este sitio web funciona como un catálogo estrictamente informativo y NO recopila, intercepta ni almacena datos personales de los visitantes. No empleamos formularios de captura de datos en nuestra web. Toda comunicación e intercambio de información personal para adopciones se canaliza externamente a través de WhatsApp.`,
   },
   {
-    title: '2. Cookies y rastreo',
-    body:  `No utilizamos cookies de rastreo de terceros ni herramientas de analítica que
-            recopilen datos personales identificables. La caché de las mascotas se
-            almacena temporalmente en el navegador para mejorar el rendimiento de carga.`,
+    title: '2. Rastreo, Cookies y Almacenamiento Local',
+    body:  `No utilizamos cookies publicitarias ni herramientas de rastreo de terceros. Empleamos mecanismos de almacenamiento local en el navegador (localStorage) de manera exclusiva para gestionar de forma segura los tokens de sesión de nuestro personal interno autorizado (panel de administración). Ningún visitante público es rastreado por esta vía.`,
   },
   {
-    title: '3. Datos del personal del refugio',
-    body:  `Los usuarios con acceso al panel de administración (staff del refugio) tienen sus
-            credenciales almacenadas de forma segura y privada en Upstash Redis,
-            con contraseñas hasheadas mediante bcrypt. Estos datos NUNCA se exponen públicamente
-            ni se almacenan en el repositorio de GitHub.`,
+    title: '3. Uso de Plataformas de Terceros (WhatsApp)',
+    body:  `Al hacer clic en los botones de contacto, usted será redirigido a WhatsApp (propiedad de Meta Platforms, Inc.). Al interactuar por esa vía, sus datos, número telefónico y mensajes quedan sujetos a la propia Política de Privacidad de Meta. Patitas de Amor Barquisimeto no automatiza, extrae ni respalda los datos de dichas conversaciones en servidores propios.`,
   },
   {
-    title: '4. Fichas de mascotas',
-    body:  `Las fotografías y datos de las mascotas (nombre, especie, descripción, estado de
-            adopción) son información pública alojada en un repositorio de GitHub. No contienen
-            datos personales de adoptantes ni de personal.`,
+    title: '4. Infraestructura y Procesadores Técnicos',
+    body:  `El sitio web está alojado en Cloudflare Pages, y las fichas de las mascotas (fotografías, nombres y estado de salud) se consultan de manera abierta y anónima desde los repositorios de GitHub, Inc. Estas empresas tecnológicas actúan únicamente como distribuidores de contenido y procesadores de red, garantizando conexiones seguras vía HTTPS.`,
   },
   {
-    title: '5. Comunicación por WhatsApp',
-    body:  `Toda comunicación de adopción, rescate y donación se realiza a través de WhatsApp.
-            Al contactarnos, usted está interactuando directamente con la plataforma de
-            Meta Platforms, Inc., sujeta a su propia Política de Privacidad y Términos de Servicio.
-            petRescue no retiene ni comparte los mensajes de WhatsApp recibidos.`,
-  },
-  {
-    title: '6. Seguridad',
-    body:  `Toda la infraestructura de la aplicación opera sobre HTTPS. Los secretos sensibles
-            (tokens de API, claves JWT) están almacenados exclusivamente en variables de
-            entorno de Cloudflare Pages y nunca son expuestos al navegador del usuario.`,
-  },
-  {
-    title: '7. Cambios a esta política',
-    body:  `Podemos actualizar esta Política de Privacidad ocasionalmente. Te recomendamos
-            revisarla periódicamente. Cualquier cambio relevante será publicado en esta misma página.`,
+    title: '5. Datos del personal del refugio',
+    body:  `Las credenciales de nuestro equipo voluntario y administrador se almacenan cifradas en bases de datos protegidas (Upstash Redis) y nunca se exponen públicamente.`,
   },
 ];
 
