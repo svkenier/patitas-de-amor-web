@@ -13,6 +13,8 @@ export interface Settings {
   social_links?: SocialLinks;
   expirationDate?: string;
   monitoringActive?: boolean;
+  domainExpirationDate?: string;
+  domainAlertEnabled?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
