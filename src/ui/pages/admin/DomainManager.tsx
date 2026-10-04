@@ -153,7 +153,7 @@ export default function DomainManager() {
                 <FormControlLabel
                   control={<Switch checked={monitoringActive} onChange={toggleMonitoring} color="primary" disabled={mutation.isPending} />}
                   label={
-                    <Typography fontWeight={700} color="text.primary">
+                    <Typography fontWeight={500} color="#334155">
                       Monitoreo Activo
                     </Typography>
                   }
