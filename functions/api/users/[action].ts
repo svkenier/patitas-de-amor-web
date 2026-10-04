@@ -32,6 +32,13 @@ export async function onRequest(context: any) {
         return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
       }
 
+      if (actorRole !== 'owner' && (String(body.role) === 'owner' || body.role === 'superadmin')) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario (owner) puede asignar roles de nivel owner o superadmin.' }), { 
+          status: 403, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
+
       if (!canCreateRole(actorRole, body.role as UserRole)) {
         return new Response(JSON.stringify({ error: 'Forbidden: Insufficient role to create this user' }), { status: 403 });
       }
@@ -54,6 +61,13 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'DELETE' && action === 'delete') {
+      if (actorRole !== 'owner') {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario (owner) puede eliminar usuarios.' }), { 
+          status: 403, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
+
       const body = await request.json() as { username: string };
       if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
 
@@ -83,8 +97,21 @@ export async function onRequest(context: any) {
         return new Response(JSON.stringify({ error: 'Forbidden: Cannot downgrade a protected user' }), { status: 403 });
       }
 
-      // Can manage?
+      // Validación estricta para modificación de roles
       if (body.role) {
+        if (actorRole !== 'owner' && (body.role === 'owner' || body.role === 'superadmin')) {
+          return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario (owner) puede asignar roles de nivel owner o superadmin.' }), { 
+            status: 403, 
+            headers: { 'Content-Type': 'application/json' } 
+          });
+        }
+        if (actorRole !== 'owner' && payload.sub === body.username) {
+          return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes promover o cambiar tu propio rol.' }), { 
+            status: 403, 
+            headers: { 'Content-Type': 'application/json' } 
+          });
+        }
+
         if (!canManage(actorRole, target.role) || !canCreateRole(actorRole, body.role as UserRole)) {
           return new Response(JSON.stringify({ error: 'Forbidden: Insufficient role' }), { status: 403 });
         }

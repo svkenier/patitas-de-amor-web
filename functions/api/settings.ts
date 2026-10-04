@@ -44,9 +44,35 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   }
 
   try {
-    const body = await request.json();
+    const body = await request.json() as Record<string, any>;
     
     const current = await getFileWithETag(SHELTER_INFO_PATH, env);
+    
+    let currentData: Record<string, any> = {};
+    if (current.data && current.data.content) {
+      try {
+        currentData = JSON.parse(decodeURIComponent(escape(atob(current.data.content))));
+      } catch (e) {
+        console.warn('[settings.ts] Error decodificando configuración actual', e);
+      }
+    }
+
+    const domainKeys = ['domain', 'customDomain', 'domainExpirationDate', 'monitoringActive', 'renewalMode', 'dns'];
+    const isDomainModified = domainKeys.some(key => {
+      const newVal = body[key];
+      const oldVal = currentData[key];
+      if (newVal == null && oldVal == null) return false;
+      return newVal !== oldVal;
+    });
+
+    if (isDomainModified && payload.role !== 'owner') {
+      return new Response(JSON.stringify({ 
+        error: 'Acceso denegado: solo el propietario (owner) puede modificar la configuración de dominio.' 
+      }), { 
+        status: 403, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
     
     // Convert to string and base64
     const contentStr = JSON.stringify(body, null, 2);
