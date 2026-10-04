@@ -6,11 +6,13 @@ import InfoIcon from '@mui/icons-material/Info';
 import { get } from '@core/api/client';
 import { useAuth } from '@ui/context/AuthContext';
 import type { Settings } from '@core/types/settings';
-import { useTestBannerVisible } from '@core/hooks/useDomainBanner';
 
-export default function DomainAlert() {
+interface DomainAlertProps {
+  preview?: boolean;
+}
+
+export default function DomainAlert({ preview = false }: DomainAlertProps) {
   const { user } = useAuth();
-  const [preview] = useTestBannerVisible();
   const [dismissed, setDismissed] = useState(false);
   
   const parseLocalDate = (dateStr: string) => {

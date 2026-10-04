@@ -24,7 +24,7 @@ import Chip from '@mui/material/Chip';
 import { get, put, formatApiError } from '@core/api/client';
 import type { Settings } from '@core/types/settings';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
-import { useTestBannerVisible } from '@core/hooks/useDomainBanner';
+import DomainAlert from '@ui/components/DomainAlert';
 
 const parseLocalDate = (dateStr: string) => {
   if (!dateStr) return new Date();
@@ -39,7 +39,7 @@ const serializeLocalDate = (dateObj: Date) => {
 
 export default function DomainManager() {
   const qc = useQueryClient();
-  const [previewAlert, setPreviewAlert] = useTestBannerVisible();
+  const [previewAlert, setPreviewAlert] = useState(false);
   const [renewalMode, setRenewalMode] = useState<'auto' | 'manual'>('auto');
   const [renewalYears, setRenewalYears] = useState<number>(1);
   const [manualDate, setManualDate] = useState<string>('');
@@ -289,6 +289,11 @@ export default function DomainManager() {
                 control={<Switch checked={previewAlert} onChange={(e) => setPreviewAlert(e.target.checked)} color="secondary" />}
                 label="Mostrar banner de prueba"
               />
+              {previewAlert && (
+                <Box sx={{ mt: 2 }}>
+                  <DomainAlert preview />
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>

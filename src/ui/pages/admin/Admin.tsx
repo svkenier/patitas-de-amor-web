@@ -164,8 +164,6 @@ export default function Admin() {
       <Navbar />
 
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, flexGrow: 1 }}>
-        <DomainAlert />
-        
         {/* Header Admin */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
           {/* Hamburger Menu solo en móvil */}
@@ -187,6 +185,8 @@ export default function Admin() {
             )}
           </Box>
         </Box>
+
+        <DomainAlert />
 
         {/* Tabs de Escritorio */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', display: { xs: 'none', md: 'block' } }}>
