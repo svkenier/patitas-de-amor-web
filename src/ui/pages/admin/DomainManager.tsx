@@ -255,16 +255,13 @@ export default function DomainManager() {
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
                 <Button 
                   variant="contained" 
+                  color="primary"
                   size="large"
                   sx={{ 
-                    bgcolor: '#0f172a', 
-                    color: '#fff', 
                     borderRadius: 2,
                     textTransform: 'none',
                     fontWeight: 600,
-                    px: 4,
-                    '&:hover': { bgcolor: '#1e293b' },
-                    '&.Mui-disabled': { bgcolor: 'rgba(0, 0, 0, 0.12)', color: 'rgba(0, 0, 0, 0.26)' }
+                    px: 4
                   }}
                   onClick={() => {
                     if (isSubmitDisabled) return;
