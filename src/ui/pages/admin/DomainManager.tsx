@@ -19,10 +19,11 @@ import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import Switch from '@mui/material/Switch';
-import DomainAlert from '@ui/components/DomainAlert';
+import Chip from '@mui/material/Chip';
 import { get, put, formatApiError } from '@core/api/client';
 import type { Settings } from '@core/types/settings';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
+import { useTestBannerVisible } from '@core/hooks/useDomainBanner';
 
 const parseLocalDate = (dateStr: string) => {
   if (!dateStr) return new Date();
@@ -37,14 +38,14 @@ const serializeLocalDate = (dateObj: Date) => {
 
 export default function DomainManager() {
   const qc = useQueryClient();
+  const [previewAlert, setPreviewAlert] = useTestBannerVisible();
   const [renewalMode, setRenewalMode] = useState<'auto' | 'manual'>('auto');
   const [renewalYears, setRenewalYears] = useState<number>(1);
   const [manualDate, setManualDate] = useState<string>('');
   
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [suspendModalOpen, setSuspendModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
-  
-  const [previewAlert, setPreviewAlert] = useState(false);
 
   const { data: settings, isLoading, isError } = useQuery<Settings>({
     queryKey: ['settings'],
@@ -59,8 +60,9 @@ export default function DomainManager() {
   const mutation = useMutation({
     mutationFn: (newSettings: Settings) => put('/settings', newSettings),
     onSuccess: () => {
-      setSuccessMsg('Renovación registrada exitosamente.');
+      setSuccessMsg('Configuración guardada exitosamente.');
       setConfirmOpen(false);
+      setSuspendModalOpen(false);
       setTimeout(() => setSuccessMsg(''), 3000);
       void qc.invalidateQueries({ queryKey: ['settings'] });
     },
@@ -70,16 +72,13 @@ export default function DomainManager() {
   if (isError) return <Alert severity="error">Error al cargar la configuración de dominio.</Alert>;
 
   const currentSettings = settings || DEFAULT_SETTINGS;
-  const rawBaseDate = currentSettings.domainExpirationDate || DEFAULT_SETTINGS.domainExpirationDate!;
+  const rawBaseDate = currentSettings.expirationDate || currentSettings.domainExpirationDate || DEFAULT_SETTINGS.expirationDate!;
+  const monitoringActive = currentSettings.monitoringActive ?? currentSettings.domainAlertEnabled ?? true;
   
   const baseDateObj = parseLocalDate(rawBaseDate);
 
-  // Calculate new auto date by strictly adding years to the base date
   const autoNewDateObj = new Date(baseDateObj.getFullYear() + renewalYears, baseDateObj.getMonth(), baseDateObj.getDate());
-
-  // Manual date object
   const manualDateObj = manualDate ? parseLocalDate(manualDate) : new Date(baseDateObj.getTime());
-
   const finalNewDateObj = renewalMode === 'auto' ? autoNewDateObj : manualDateObj;
 
   const today = new Date();
@@ -89,7 +88,6 @@ export default function DomainManager() {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   const todayStr = serializeLocalDate(today);
-  
   const isManualDateInPast = renewalMode === 'manual' && (!manualDate || manualDateObj.getTime() < today.getTime());
 
   const options = { year: 'numeric', month: 'long', day: '2-digit' } as const;
@@ -99,7 +97,28 @@ export default function DomainManager() {
   const handleConfirm = () => {
     mutation.mutate({
       ...currentSettings,
+      expirationDate: serializeLocalDate(finalNewDateObj),
       domainExpirationDate: serializeLocalDate(finalNewDateObj)
+    });
+  };
+
+  const toggleMonitoring = () => {
+    if (monitoringActive) {
+      setSuspendModalOpen(true);
+    } else {
+      mutation.mutate({
+        ...currentSettings,
+        monitoringActive: true,
+        domainAlertEnabled: true
+      });
+    }
+  };
+
+  const confirmSuspend = () => {
+    mutation.mutate({
+      ...currentSettings,
+      monitoringActive: false,
+      domainAlertEnabled: false
     });
   };
 
@@ -115,116 +134,143 @@ export default function DomainManager() {
       {successMsg && <Alert severity="success" sx={{ mb: 3 }}>{successMsg}</Alert>}
       {mutation.isError && <Alert severity="error" sx={{ mb: 3 }}>{formatApiError(mutation.error, 'Error al procesar la renovación.')}</Alert>}
 
-      <Box sx={{ mb: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={previewAlert} onChange={(e) => setPreviewAlert(e.target.checked)} color="secondary" />}
-          label="Previsualizar diseño del banner de alerta"
-        />
-      </Box>
-      
-      {/* Muestra local de DomainAlert con prop "preview" inyectado */}
-      {previewAlert && (
-        <Box sx={{ mt: 2, mb: 4 }}>
-          <DomainAlert preview={true} />
-        </Box>
-      )}
-
       <Grid container spacing={3}>
         <Grid size={{ xs: 12 }}>
-          <Card variant="outlined" sx={{ bgcolor: 'background.paper', borderColor: diffDays <= 15 ? 'warning.main' : 'divider' }}>
+          <Card variant="outlined" sx={{ bgcolor: 'background.paper', borderColor: (diffDays <= 30 && monitoringActive) ? 'error.main' : 'divider' }}>
             <CardContent>
-              <Typography variant="overline" color="text.secondary">Estado Actual</Typography>
-              <Typography variant="h5" fontWeight={500} gutterBottom>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="overline" color="text.secondary">ESTADO DEL SERVICIO</Typography>
+                <FormControlLabel
+                  control={<Switch checked={monitoringActive} onChange={toggleMonitoring} color="primary" disabled={mutation.isPending} />}
+                  label="Monitoreo Activo"
+                  labelPlacement="start"
+                />
+              </Box>
+              
+              <Typography variant="h4" fontWeight={600} gutterBottom>
                 {formattedCurrentDate}
               </Typography>
-              <Typography variant="body1" color={diffDays <= 15 ? 'error.main' : 'success.main'} fontWeight={600}>
-                Tiempo restante para el corte anual: {diffDays} días
-              </Typography>
+              
+              <Box sx={{ mt: 1 }}>
+                {monitoringActive ? (
+                  diffDays <= 30 ? (
+                    <Chip label={`QUEDAN ${diffDays} DÍAS`} color="error" size="small" sx={{ fontWeight: 700 }} />
+                  ) : (
+                    <Typography variant="body2" color="success.main" fontWeight={600}>
+                      Tiempo restante para el corte anual: {diffDays} días
+                    </Typography>
+                  )
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    ○ Monitoreo pausado (Sin alertas globales)
+                  </Typography>
+                )}
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Typography variant="subtitle1" fontWeight={700} mt={2} mb={2}>
-            Modo de Renovación
-          </Typography>
-          
-          <FormControl component="fieldset" fullWidth>
-            <RadioGroup
-              value={renewalMode}
-              onChange={(e) => setRenewalMode(e.target.value as 'auto' | 'manual')}
-            >
-              <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: renewalMode === 'auto' ? 'primary.main' : 'divider', borderRadius: 1 }}>
-                <FormControlLabel value="auto" control={<Radio />} label="Renovación automática por años (+1, +2, +3, +5)" />
-                {renewalMode === 'auto' && (
-                  <Box sx={{ mt: 2, ml: 4 }}>
-                    <TextField
-                      select
-                      fullWidth
-                      label="Periodo a Renovar"
-                      value={renewalYears}
-                      onChange={(e) => setRenewalYears(Number(e.target.value))}
-                      sx={{ mb: 2 }}
-                    >
-                      <MenuItem value={1}>+1 Año</MenuItem>
-                      <MenuItem value={2}>+2 Años</MenuItem>
-                      <MenuItem value={3}>+3 Años</MenuItem>
-                      <MenuItem value={5}>+5 Años</MenuItem>
-                    </TextField>
-                    <Typography variant="body2" color="text.secondary">
-                      Fecha de corte actual: <strong>{formattedCurrentDate}</strong> &rarr; Nueva fecha calculada: <strong>{formattedNewDate}</strong>
-                    </Typography>
+          <Card variant="outlined" sx={{ bgcolor: 'background.paper' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} mb={2}>
+                Extender Vigencia del Dominio
+              </Typography>
+              
+              <FormControl component="fieldset" fullWidth>
+                <RadioGroup
+                  value={renewalMode}
+                  onChange={(e) => setRenewalMode(e.target.value as 'auto' | 'manual')}
+                >
+                  <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: renewalMode === 'auto' ? 'primary.main' : 'divider', borderRadius: 1 }}>
+                    <FormControlLabel value="auto" control={<Radio />} label="Renovación automática por años (+1, +2, +3, +5)" />
+                    {renewalMode === 'auto' && (
+                      <Box sx={{ mt: 2, ml: 4 }}>
+                        <TextField
+                          select
+                          fullWidth
+                          label="Periodo a Renovar"
+                          value={renewalYears}
+                          onChange={(e) => setRenewalYears(Number(e.target.value))}
+                          sx={{ mb: 2 }}
+                        >
+                          <MenuItem value={1}>+1 Año</MenuItem>
+                          <MenuItem value={2}>+2 Años</MenuItem>
+                          <MenuItem value={3}>+3 Años</MenuItem>
+                          <MenuItem value={5}>+5 Años</MenuItem>
+                        </TextField>
+                        <Typography variant="body2" color="text.secondary">
+                          Fecha de corte actual: <strong>{formattedCurrentDate}</strong> &rarr; Nueva fecha calculada: <strong>{formattedNewDate}</strong>
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
-                )}
-              </Box>
 
-              <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: renewalMode === 'manual' ? 'primary.main' : 'divider', borderRadius: 1 }}>
-                <FormControlLabel value="manual" control={<Radio />} label="Ingresar fecha exacta del registrador (Manual)" />
-                {renewalMode === 'manual' && (
-                  <Box sx={{ mt: 2, ml: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="Fecha de Expiración Exacta"
-                      type="date"
-                      value={manualDate}
-                      onChange={(e) => setManualDate(e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                      inputProps={{ min: todayStr }}
-                      error={isManualDateInPast}
-                      helperText={
-                        isManualDateInPast
-                          ? 'La fecha de renovación debe ser posterior al día de hoy'
-                          : manualDate
-                          ? `📅 Fecha seleccionada: ${manualDateObj.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })}`
-                          : ''
-                      }
-                    />
+                  <Box sx={{ p: 2, border: '1px solid', borderColor: renewalMode === 'manual' ? 'primary.main' : 'divider', borderRadius: 1 }}>
+                    <FormControlLabel value="manual" control={<Radio />} label="Ingresar fecha exacta del registrador (Manual)" />
+                    {renewalMode === 'manual' && (
+                      <Box sx={{ mt: 2, ml: 4 }}>
+                        <TextField
+                          fullWidth
+                          label="Fecha de Expiración Exacta"
+                          type="date"
+                          value={manualDate}
+                          onChange={(e) => setManualDate(e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          inputProps={{ min: todayStr }}
+                          error={isManualDateInPast}
+                          helperText={
+                            isManualDateInPast
+                              ? 'La fecha de renovación debe ser posterior al día de hoy'
+                              : manualDate
+                              ? `📅 Fecha seleccionada: ${manualDateObj.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })}`
+                              : ''
+                          }
+                        />
+                      </Box>
+                    )}
                   </Box>
-                )}
+                </RadioGroup>
+              </FormControl>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                <Button 
+                  variant="contained" 
+                  size="large"
+                  sx={{ bgcolor: '#212121', color: '#fff', '&:hover': { bgcolor: '#000' } }}
+                  onClick={() => {
+                    if (isManualDateInPast) return;
+                    setConfirmOpen(true);
+                  }}
+                  disabled={isManualDateInPast || mutation.isPending}
+                >
+                  Registrar Renovación
+                </Button>
               </Box>
-            </RadioGroup>
-          </FormControl>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              size="large"
-              onClick={() => {
-                if (isManualDateInPast) {
-                  return; // prevent if invalid
-                }
-                setConfirmOpen(true);
-              }}
-              disabled={isManualDateInPast}
-            >
-              Registrar Renovación
-            </Button>
-          </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <Card variant="outlined" sx={{ bgcolor: 'background.paper' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                Herramientas de Previsualización
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Permite simular el despliegue del banner de advertencia para verificar contrastes y legibilidad antes de que ocurra una alerta real.
+              </Typography>
+              <FormControlLabel
+                control={<Switch checked={previewAlert} onChange={(e) => setPreviewAlert(e.target.checked)} color="secondary" />}
+                label="Mostrar banner de prueba"
+              />
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
-      <Dialog open={confirmOpen} onClose={() => { if (!mutation.isPending) setConfirmOpen(false); }}>
+      {/* Modal Confirmación de Renovación */}
+      <Dialog open={confirmOpen} onClose={() => { if (!mutation.isPending) setConfirmOpen(false); }} PaperProps={{ sx: { borderRadius: 2 } }}>
         <DialogTitle>Confirmar Renovación de Dominio</DialogTitle>
         <DialogContent dividers>
           <Typography variant="body1" gutterBottom>
@@ -249,6 +295,47 @@ export default function DomainManager() {
             startIcon={mutation.isPending ? <CircularProgress size={20} color="inherit" /> : null}
           >
             Confirmar Renovación
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal Suspender Monitoreo */}
+      <Dialog 
+        open={suspendModalOpen} 
+        onClose={() => { if (!mutation.isPending) setSuspendModalOpen(false); }} 
+        PaperProps={{ 
+          sx: { 
+            borderRadius: 3, 
+            boxShadow: '0px 10px 40px rgba(0,0,0,0.1)' 
+          } 
+        }}
+        slotProps={{
+          backdrop: { sx: { backdropFilter: 'blur(3px)' } }
+        }}
+      >
+        <DialogTitle fontWeight={700}>¿Suspender monitoreo de dominio?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" color="text.secondary">
+            Si desactiva el monitoreo maestro, el panel administrativo no emitirá alertas preventivas sobre la expiración del dominio. Podría perder el dominio si no gestiona la renovación manualmente a tiempo.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setSuspendModalOpen(false)} color="inherit" disabled={mutation.isPending} sx={{ borderRadius: 2 }}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={confirmSuspend} 
+            variant="contained" 
+            disabled={mutation.isPending}
+            sx={{ 
+              borderRadius: 2,
+              bgcolor: '#e57373', 
+              color: '#fff', 
+              '&:hover': { bgcolor: '#ef5350' } 
+            }}
+            startIcon={mutation.isPending ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            Suspender Monitoreo
           </Button>
         </DialogActions>
       </Dialog>

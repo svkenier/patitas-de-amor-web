@@ -7,6 +7,7 @@ interface SEOProps {
   url?: string;
   type?: string;
   schemaType?: string;
+  noindex?: boolean;
 }
 
 export default function SEO({ 
@@ -15,7 +16,8 @@ export default function SEO({
   image = '/hero-desktop.webp', 
   url, 
   type = 'website',
-  schemaType = 'AnimalShelter'
+  schemaType = 'AnimalShelter',
+  noindex = false
 }: SEOProps) {
   let baseUrl = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://patitasdeamorbqto.com');
   // Limpiar posible formato Markdown accidental como "[https://...](https://...)"
@@ -59,6 +61,7 @@ export default function SEO({
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={finalUrl} />
+      {noindex && <meta name="robots" content="noindex, follow" />}
 
       {/* Geo-Metatags */}
       <meta name="geo.region" content="VE-K" />

@@ -39,7 +39,7 @@ const SECTIONS = [
 export default function Terms() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <SEO title="Términos y Condiciones · Patitas de Amor Bqto" description="Términos y Condiciones de uso de la plataforma Patitas de Amor Barquisimeto." url="/terminos" />
+      <SEO title="Términos y Condiciones · Patitas de Amor Bqto" description="Términos y Condiciones de uso de la plataforma Patitas de Amor Barquisimeto." url="/terminos" noindex={true} />
       <Navbar />
 
       {/* Encabezado */}

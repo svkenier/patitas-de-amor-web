@@ -11,8 +11,8 @@ export interface Settings {
   address: string;
   map_url?: string;
   social_links?: SocialLinks;
-  domainExpirationDate?: string;
-  domainAlertEnabled?: boolean;
+  expirationDate?: string;
+  monitoringActive?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -21,6 +21,6 @@ export const DEFAULT_SETTINGS: Settings = {
   email: 'contacto@patitasdeamor.org',
   address: 'Calle Falsa 123, Ciudad, País',
   map_url: '',
-  domainExpirationDate: '2027-10-02T00:00:00Z',
-  domainAlertEnabled: true,
+  expirationDate: '2027-10-02T00:00:00Z',
+  monitoringActive: true,
 };

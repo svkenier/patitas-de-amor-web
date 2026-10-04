@@ -40,7 +40,7 @@ const SECTIONS = [
 export default function Privacy() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <SEO title="Políticas de Privacidad · Patitas de Amor Bqto" description="Políticas de privacidad de Patitas de Amor Barquisimeto." url="/privacidad" />
+      <SEO title="Políticas de Privacidad · Patitas de Amor Bqto" description="Políticas de privacidad de Patitas de Amor Barquisimeto." url="/privacidad" noindex={true} />
       <Navbar />
 
       {/* Encabezado */}
