@@ -88,7 +88,16 @@ export default function DomainManager() {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   const todayStr = serializeLocalDate(today);
-  const isManualDateInPast = renewalMode === 'manual' && (!manualDate || manualDateObj.getTime() < today.getTime());
+  
+  let isManualDateInvalid = false;
+  if (manualDate) {
+    const manualDateOnly = parseLocalDate(manualDate);
+    manualDateOnly.setHours(0, 0, 0, 0);
+    isManualDateInvalid = manualDateOnly.getTime() <= today.getTime();
+  }
+  
+  const showManualError = renewalMode === 'manual' && manualDate !== '' && isManualDateInvalid;
+  const isSubmitDisabled = mutation.isPending || (renewalMode === 'manual' && (manualDate === '' || isManualDateInvalid));
 
   const options = { year: 'numeric', month: 'long', day: '2-digit' } as const;
   const formattedCurrentDate = baseDateObj.toLocaleDateString('es-ES', options);
@@ -218,9 +227,9 @@ export default function DomainManager() {
                           onChange={(e) => setManualDate(e.target.value)}
                           InputLabelProps={{ shrink: true }}
                           inputProps={{ min: todayStr }}
-                          error={isManualDateInPast}
+                          error={showManualError}
                           helperText={
-                            isManualDateInPast
+                            showManualError
                               ? 'La fecha de renovación debe ser posterior al día de hoy'
                               : manualDate
                               ? `📅 Fecha seleccionada: ${manualDateObj.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })}`
@@ -239,10 +248,10 @@ export default function DomainManager() {
                   size="large"
                   sx={{ bgcolor: '#212121', color: '#fff', '&:hover': { bgcolor: '#000' } }}
                   onClick={() => {
-                    if (isManualDateInPast) return;
+                    if (isSubmitDisabled) return;
                     setConfirmOpen(true);
                   }}
-                  disabled={isManualDateInPast || mutation.isPending}
+                  disabled={isSubmitDisabled}
                 >
                   Registrar Renovación
                 </Button>
