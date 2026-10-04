@@ -18,7 +18,7 @@ export const onRequestGet = async (context) => {
             // Return empty object fallback (HTTP 200) instead of throwing an error when file doesn't exist.
             return new Response(JSON.stringify({}), { status: 200, headers });
         }
-        const content = atob(ghRes.data.content);
+        const content = decodeURIComponent(escape(atob(ghRes.data.content)));
         return new Response(content, { status: 200, headers });
     }
     catch (err) {

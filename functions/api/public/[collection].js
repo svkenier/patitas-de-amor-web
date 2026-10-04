@@ -31,7 +31,8 @@ export const onRequest = async (context) => {
         let records = [];
         if (ghRes.data) {
             try {
-                const parsed = JSON.parse(atob(ghRes.data.content));
+                const decodedStr = decodeURIComponent(escape(atob(ghRes.data.content)));
+                const parsed = JSON.parse(decodedStr);
                 if (Array.isArray(parsed))
                     records = parsed;
                 else {
