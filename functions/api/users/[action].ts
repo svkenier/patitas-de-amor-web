@@ -32,11 +32,10 @@ export async function onRequest(context: any) {
         return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
       }
 
-      if (actorRole !== 'owner' && (String(body.role) === 'owner' || body.role === 'superadmin')) {
-        return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario (owner) puede asignar roles de nivel owner o superadmin.' }), { 
-          status: 403, 
-          headers: { 'Content-Type': 'application/json' } 
-        });
+      if (body.role === 'superadmin' && actorRole !== 'owner') {
+        return new Response(JSON.stringify({ 
+          error: 'Acceso denegado: solo el propietario (owner) puede crear o asignar el rol superadmin.' 
+        }), { status: 403, headers: { 'Content-Type': 'application/json' } });
       }
 
       if (!canCreateRole(actorRole, body.role as UserRole)) {
@@ -102,11 +101,10 @@ export async function onRequest(context: any) {
 
       // Validación estricta para modificación de roles
       if (body.role) {
-        if (actorRole !== 'owner' && (body.role === 'owner' || body.role === 'superadmin')) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario (owner) puede asignar roles de nivel owner o superadmin.' }), { 
-            status: 403, 
-            headers: { 'Content-Type': 'application/json' } 
-          });
+        if (body.role === 'superadmin' && actorRole !== 'owner') {
+          return new Response(JSON.stringify({ 
+            error: 'Acceso denegado: solo el propietario (owner) puede crear o asignar el rol superadmin.' 
+          }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
         if (actorRole !== 'owner' && payload.sub === body.username) {
           return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes promover o cambiar tu propio rol.' }), { 

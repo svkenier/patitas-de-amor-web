@@ -187,7 +187,7 @@ export function canManage(actorRole: UserRole, targetRole: UserRole): boolean {
  */
 export function canCreateRole(actorRole: UserRole, newRole: UserRole): boolean {
   if (actorRole === 'owner') return true;
-  if (actorRole === 'superadmin') return newRole !== 'owner';
-  if (actorRole === 'encargado')  return newRole !== 'superadmin' && newRole !== 'owner';
+  if (actorRole === 'superadmin') return newRole === 'encargado' || newRole === 'voluntario';
+  if (actorRole === 'encargado')  return newRole === 'voluntario';
   return false;
 }
