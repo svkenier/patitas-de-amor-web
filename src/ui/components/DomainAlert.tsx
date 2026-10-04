@@ -56,8 +56,6 @@ export default function DomainAlert({ preview = false }: DomainAlertProps) {
   const shouldShowRealAlert = monitoringActive && diffDays <= 30 && diffDays > 0 && !dismissed;
 
   if (shouldShowRealAlert || preview) {
-    const displayDays = preview ? 14 : diffDays;
-    
     return (
       <Box sx={{ mb: 3 }}>
         <Alert 
@@ -80,7 +78,7 @@ export default function DomainAlert({ preview = false }: DomainAlertProps) {
           }}
         >
           {preview && <strong>[MODO PREVISUALIZACIÓN] </strong>}
-          Aviso importante: El servicio de dominio web anual se encuentra próximo a su fecha de corte (quedan {displayDays} días). Para garantizar la continuidad de la web y evitar interrupciones, por favor gestione la renovación anual con su proveedor de dominio o administrador técnico.
+          Aviso importante: El servicio de dominio web anual se encuentra próximo a su fecha de corte. Para garantizar la continuidad de la web y evitar interrupciones en el servicio, por favor gestione la renovación anual a la brevedad con su proveedor de dominio o administrador técnico.
         </Alert>
       </Box>
     );
