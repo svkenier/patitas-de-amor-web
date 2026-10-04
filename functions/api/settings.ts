@@ -57,20 +57,30 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       }
     }
 
-    const domainKeys = ['domain', 'customDomain', 'domainExpirationDate', 'monitoringActive', 'renewalMode', 'dns'];
-    const isDomainModified = domainKeys.some(key => {
-      const newVal = body[key];
-      const oldVal = currentData[key];
-      if (newVal == null && oldVal == null) return false;
-      return newVal !== oldVal;
-    });
+    if (payload.role !== 'owner') {
+      const domainKeys = ['expirationDate', 'monitoringActive', 'domainExpirationDate', 'domainAlertEnabled'];
+      
+      const isDomainModified = domainKeys.some(key => {
+        const newVal = body[key];
+        const oldVal = currentData[key];
+        if (newVal === undefined && oldVal === undefined) return false;
+        return newVal !== oldVal;
+      });
 
-    if (isDomainModified && payload.role !== 'owner') {
-      return new Response(JSON.stringify({ 
-        error: 'Acceso denegado: solo el propietario (owner) puede modificar la configuración de dominio.' 
-      }), { 
-        status: 403, 
-        headers: { 'Content-Type': 'application/json' } 
+      if (isDomainModified) {
+        return new Response(JSON.stringify({ 
+          error: 'Acceso denegado: solo el propietario (owner) puede modificar los parámetros de corte y monitoreo del servicio.' 
+        }), { 
+          status: 403, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
+
+      // Asegurar que los valores se mantengan inalterados
+      domainKeys.forEach(key => {
+        if (currentData[key] !== undefined) {
+          body[key] = currentData[key];
+        }
       });
     }
     

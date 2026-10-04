@@ -1,7 +1,7 @@
 import { getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
-import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL } from '../../../src/core/auth/kv.js';
+import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL } from '../../../src/core/auth/kv.js';
 import { hashPassword } from '../../../src/core/auth/crypto.js';
-import { canManage, canCreateRole, type CreateUserRequest, type ResetPasswordRequest, type UserRole } from '../../../src/core/types/user.js';
+import { canManage, canCreateRole, type CreateUserRequest, type ResetPasswordRequest, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
 
 export async function onRequest(context: any) {
   const request: Request = context.request;
@@ -61,25 +61,28 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'DELETE' && action === 'delete') {
-      if (actorRole !== 'owner') {
-        return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario (owner) puede eliminar usuarios.' }), { 
+      const body = await request.json() as { username: string };
+      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+
+      if (body.username === payload.sub) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes eliminarte a ti mismo.' }), { 
           status: 403, 
           headers: { 'Content-Type': 'application/json' } 
         });
       }
 
-      const body = await request.json() as { username: string };
-      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
-
       const target = await getUser(body.username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
+
+      if (ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role]) {
+        return new Response(JSON.stringify({ error: 'No tienes permisos para eliminar a un usuario de igual o mayor jerarquía.' }), { 
+          status: 403, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
       
       if (target.isProtected || (env.ADMIN_USERNAME && body.username === env.ADMIN_USERNAME)) {
         return new Response(JSON.stringify({ error: 'Forbidden: Cannot delete a protected user' }), { status: 403 });
-      }
-
-      if (!canManage(actorRole, target.role)) {
-        return new Response(JSON.stringify({ error: 'Forbidden: Insufficient role to manage this user' }), { status: 403 });
       }
 
       await deleteUser(body.username, env);
@@ -141,8 +144,13 @@ export async function onRequest(context: any) {
       const target = await getUser(body.target_username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
-      if (!canManage(actorRole, target.role) && actorRole !== 'superadmin') {
-        return new Response(JSON.stringify({ error: 'Forbidden: Insufficient role' }), { status: 403 });
+      if (body.target_username !== payload.sub) {
+        if (target.role === 'owner') {
+          return new Response(JSON.stringify({ error: 'Acceso denegado: la cuenta del propietario es inviolable.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+        }
+        if (ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role]) {
+          return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes modificar la contraseña de un usuario de igual o mayor jerarquía.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+        }
       }
 
       const hashed = await hashPassword(body.new_password);
@@ -151,17 +159,18 @@ export async function onRequest(context: any) {
     }
     
     if (request.method === 'POST' && action === 'force-logout') {
+      if (actorRole !== 'owner') {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario puede forzar el cierre de sesión.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+      }
+      
       const body = await request.json() as { username: string };
       if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
 
       const target = await getUser(body.username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
-      if (payload.sub !== target.username && !canManage(actorRole, target.role)) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
-      }
-
       await updateUserPreservingTTL(body.username, { tokenVersion: (target.tokenVersion || 1) + 1 }, env);
+      await activateTTL(body.username, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 
