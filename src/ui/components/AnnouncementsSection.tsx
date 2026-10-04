@@ -25,7 +25,7 @@ import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import ErrorOutlineIcon  from '@mui/icons-material/ErrorOutline';
 import ChevronLeftIcon   from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon  from '@mui/icons-material/ChevronRight';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 import { get, formatApiError } from '@core/api/client';
@@ -99,8 +99,9 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#F5F5F4',
-              borderBottom: '1px solid #E7E5E4',
+              bgcolor: alpha(TYPE_COLORS[announcement.type] || '#7C3AED', 0.08),
+              borderBottom: '1px solid',
+              borderColor: 'divider',
             }}
           >
             <Box
@@ -108,7 +109,8 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
                 width: 88,
                 height: 88,
                 borderRadius: '50%',
-                bgcolor: 'rgba(0,0,0,0.03)',
+                bgcolor: 'background.paper',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

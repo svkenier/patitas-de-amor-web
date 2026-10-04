@@ -183,11 +183,12 @@ export default function AnnouncementsManager() {
                     ) : (
                       <Box sx={{ 
                         width: 80, height: 80, 
-                        bgcolor: '#F5F5F4', 
-                        border: '1px solid #E7E5E4',
+                        bgcolor: alpha(TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#7C3AED', 0.08), 
+                        border: '1px solid',
+                        borderColor: 'divider',
                         display: 'flex', alignItems: 'center', justifyContent: 'center' 
                       }}>
-                        <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: isActive ? 0.5 : 0.2, fontSize: 40, filter: isActive ? 'none' : 'grayscale(100%)', transition: 'filter 0.2s ease, opacity 0.2s ease' }} />
+                        <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', fontSize: 40, filter: isActive ? 'none' : 'grayscale(100%)', transition: 'filter 0.2s ease, opacity 0.2s ease' }} />
                       </Box>
                     )}
                     <Box sx={{ flexGrow: 1 }}>
@@ -294,11 +295,12 @@ export default function AnnouncementsManager() {
                       ) : (
                         <Box sx={{ 
                           width: 40, height: 40, 
-                          bgcolor: '#F5F5F4', 
-                          border: '1px solid #E7E5E4',
+                          bgcolor: alpha(TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#7C3AED', 0.08), 
+                          border: '1px solid',
+                          borderColor: 'divider',
                           display: 'flex', alignItems: 'center', justifyContent: 'center' 
                         }}>
-                          <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: isActive ? 0.5 : 0.2, fontSize: 24, filter: isActive ? 'none' : 'grayscale(100%)', transition: 'filter 0.2s ease, opacity 0.2s ease' }} />
+                          <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', fontSize: 24, filter: isActive ? 'none' : 'grayscale(100%)', transition: 'filter 0.2s ease, opacity 0.2s ease' }} />
                         </Box>
                       )}
                     </TableCell>

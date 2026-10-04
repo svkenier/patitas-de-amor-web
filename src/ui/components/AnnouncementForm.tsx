@@ -174,7 +174,10 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
             image_height: imgHeight,
           }
         } : {}),
-        ...(isEdit ? { main_image: initial?.main_image } : {}),
+        ...(isEdit ? { 
+          main_image: preview ? initial?.main_image : '',
+          main_image_url: preview ? initial?.main_image : ''
+        } : {}),
       };
       
       if (isEdit) {
@@ -202,6 +205,10 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const isImageChanged = preview !== (initial?.main_image ?? '');
+  const hasChanges = !isEdit || formik.dirty || isImageChanged;
+  const isSaveDisabled = mutation.isPending || imgLoading || formik.isSubmitting || !hasChanges;
 
   const handleTrigger = () => {
     if (isMobile) {
@@ -268,19 +275,42 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
                     onError={(e) => { (e.currentTarget as HTMLImageElement).src = ITEM_IMAGE_FALLBACK; }}
                     sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
-                  <Tooltip title="Cambiar foto">
-                    <IconButton aria-label="Cambiar foto principal"
-                      component="span"
-                      size="small"
-                      sx={{
-                        position: 'absolute', top: 8, right: 8,
-                        bgcolor: 'rgba(0,0,0,0.55)', color: 'white',
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.75)' },
-                      }}
-                    >
-                      <AddPhotoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                    <Tooltip title="Cambiar foto" arrow>
+                      <IconButton aria-label="Cambiar foto principal"
+                        component="span"
+                        size="small"
+                        sx={{
+                          bgcolor: 'rgba(0,0,0,0.55)', color: 'white',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.75)' },
+                        }}
+                      >
+                        <AddPhotoIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Eliminar foto" arrow>
+                      <IconButton aria-label="Eliminar foto"
+                        component="span"
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreview('');
+                          setBase64('');
+                          setImgWidth(undefined);
+                          setImgHeight(undefined);
+                          if (cameraInputRef.current) cameraInputRef.current.value = '';
+                          if (galleryInputRef.current) galleryInputRef.current.value = '';
+                        }}
+                        sx={{
+                          bgcolor: 'rgba(0,0,0,0.55)', color: 'white',
+                          transition: 'background-color 0.2s',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.75)' },
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </>
               ) : (
                 <Box sx={{ textAlign: 'center', p: 1, pointerEvents: 'none' }}>
@@ -422,15 +452,19 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
         <Button onClick={onClose} disabled={mutation.isPending} color="inherit">
           Cancelar
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={mutation.isPending || imgLoading || formik.isSubmitting}
-          startIcon={mutation.isPending ? <CircularProgress size={16} color="inherit" /> : undefined}
-          sx={{ borderRadius: 0 }}
-        >
-          {mutation.isPending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear anuncio'}
-        </Button>
+        <Tooltip title={!hasChanges && isEdit ? "No hay cambios pendientes por guardar" : ""} arrow placement="top">
+          <span>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isSaveDisabled}
+              startIcon={mutation.isPending ? <CircularProgress size={16} color="inherit" /> : undefined}
+              sx={{ borderRadius: 0 }}
+            >
+              {mutation.isPending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear anuncio'}
+            </Button>
+          </span>
+        </Tooltip>
       </DialogActions>
     </Dialog>
   );

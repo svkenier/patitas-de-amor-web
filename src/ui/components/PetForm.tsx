@@ -329,6 +329,10 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const isImageChanged = mainPreview !== (initial?.main_image ?? '') || extraFiles.length > 0;
+  const hasChanges = !isEdit || formik.dirty || isImageChanged;
+  const isSaveDisabled = mutation.isPending || imgLoading || formik.isSubmitting || !hasChanges;
+
   return (
     <Dialog
       open={open}
@@ -562,15 +566,19 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
         <Button onClick={onClose} disabled={mutation.isPending} color="inherit">
           Cancelar
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={mutation.isPending || imgLoading || formik.isSubmitting}
-          startIcon={mutation.isPending ? <CircularProgress size={16} color="inherit" /> : undefined}
-          sx={{ borderRadius: 0, px: 3 }}
-        >
-          {mutation.isPending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear registro'}
-        </Button>
+        <Tooltip title={!hasChanges && isEdit ? "No hay cambios pendientes por guardar" : ""} arrow placement="top">
+          <span>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isSaveDisabled}
+              startIcon={mutation.isPending ? <CircularProgress size={16} color="inherit" /> : undefined}
+              sx={{ borderRadius: 0, px: 3 }}
+            >
+              {mutation.isPending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear registro'}
+            </Button>
+          </span>
+        </Tooltip>
       </DialogActions>
     </Dialog>
   );

@@ -27,15 +27,34 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return new Response(JSON.stringify({ error: 'Demasiadas peticiones. Intenta más tarde.' }), { status: 429, headers });
     }
 
+    const { getAuthPayload } = await import('../../../src/core/auth/auth.js');
+    const payload = await getAuthPayload(request, env);
+    const isAuthenticated = Boolean(payload);
+
     const ifNoneMatch = request.headers.get('if-none-match') || undefined;
     const ghRes = await getFileWithETag(path, env, ifNoneMatch);
 
     if (ghRes.notModified) {
+      // If we are authenticated, we cannot use a 304 if it was cached as public, but the browser cache handles it.
+      // Better to add Cache-Control here too.
+      if (isAuthenticated) {
+        headers.set('Cache-Control', 'private, no-cache, no-store');
+      } else {
+        headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=86400');
+      }
       return new Response(null, { status: 304, headers });
     }
     
     if (ghRes.etag) headers.set('ETag', ghRes.etag);
-    headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=86400');
+    
+    if (isAuthenticated) {
+      // No cachear en el edge (CDN) respuestas de usuarios autenticados que puedan contener datos ocultos
+      headers.set('Cache-Control', 'private, no-cache, no-store');
+    } else {
+      // Cachear peticiones públicas normales
+      headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=86400');
+    }
+    
     headers.set('Content-Type', 'application/json');
 
     let records: any[] = [];
@@ -52,6 +71,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         records = [];
       }
     }
+
+    // Filtrar registros ocultos para usuarios NO autenticados
+    if (!isAuthenticated) {
+      records = records.filter(r => {
+        const isHidden = r.status === 'oculto' || r.hidden === true || r.attributes?.hidden === true;
+        return !isHidden;
+      });
+    }
+
     return new Response(JSON.stringify(records), { status: 200, headers });
   } catch (err) {
     console.warn('[Public Collection Fallback]:', err);

@@ -21,6 +21,8 @@ import CancelIcon     from '@mui/icons-material/Cancel';
 import MaleIcon       from '@mui/icons-material/Male';
 import FemaleIcon     from '@mui/icons-material/Female';
 import PetsIcon       from '@mui/icons-material/Pets';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
+import { alpha } from '@mui/material/styles';
 import Navbar         from '@ui/components/Navbar';
 import Footer         from '@ui/components/Footer';
 import AnimatedSection from '@ui/components/AnimatedSection';
@@ -31,13 +33,15 @@ import type { BaseRecord } from '@core/types/record';
 import { ITEM_IMAGE_FALLBACK } from '@core/coreConfig';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
 import type { Settings } from '@core/types/settings';
+import { useAuth } from '@ui/context/AuthContext';
 
-const STATUS_LABEL: Record<string, { label: string; color: 'success' | 'warning' | 'default' }> = {
+const STATUS_LABEL: Record<string, { label: string; color: 'success' | 'warning' | 'default' | 'error' }> = {
   disponible: { label: '✅ Disponible', color: 'success' },
   en_proceso: { label: '🕐 En proceso', color: 'warning' },
   adoptado:   { label: '🏠 Adoptado',   color: 'default' },
   active:     { label: '✅ Activo',     color: 'success' },
   inactive:   { label: '❌ Inactivo',   color: 'default' },
+  oculto:     { label: '👁️ Oculto',      color: 'error' },
 };
 
 const SPECIES_LABEL: Record<string, string> = { perro: '🐕 Perro', gato: '🐈 Gato', otro: '🐾 Otro' };
@@ -66,13 +70,18 @@ export default function PetDetailPage() {
   const navigate  = useNavigate();
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [snackOpen, setSnackOpen]   = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const { data: record, isLoading, isError, error } = useQuery<BaseRecord>({
-    queryKey: ['pet', id],
+    queryKey: ['pet', id, isAuthenticated],
     queryFn:  async () => {
       const records = await get<BaseRecord[]>('/public/pets');
       const found = records?.find(p => p.id === id);
-      if (!found || found.attributes?.is_active === false) {
+      if (!found) {
+        throw new Error('Registro no encontrado o no visible');
+      }
+      const isHiddenRec = found.status === 'oculto' || (found as any).hidden === true || found.attributes?.hidden === true || found.attributes?.is_active === false;
+      if (isHiddenRec && !isAuthenticated) {
         throw new Error('Registro no encontrado o no visible');
       }
       return found;
@@ -155,6 +164,7 @@ export default function PetDetailPage() {
 
   const status   = STATUS_LABEL[record.status] ?? STATUS_LABEL.disponible;
   const isAdopted = record.status === 'adoptado' || record.status === 'inactive';
+  const isHidden = record.status === 'oculto' || record.attributes?.is_active === false;
 
   const attributes = record.attributes || {};
   const especie = attributes['especie'] as string | undefined;
@@ -193,7 +203,13 @@ export default function PetDetailPage() {
         <Container maxWidth="lg">
           <Button
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (window.history.state && window.history.state.idx > 0) {
+                navigate(-1);
+              } else {
+                navigate('/mascotas');
+              }
+            }}
             sx={{ mb: 3, color: 'text.secondary' }}
           >
             Volver
@@ -210,8 +226,36 @@ export default function PetDetailPage() {
                     borderColor:  'divider',
                     bgcolor:      'grey.100',
                     aspectRatio:  '4/3',
+                    position:     'relative',
                   }}
                 >
+                  {isHidden && (
+                    <Chip
+                      icon={<VisibilityOffOutlinedIcon />}
+                      label="Ficha oculta"
+                      sx={{
+                        position: 'absolute',
+                        top: 16,
+                        left: 16,
+                        zIndex: 2,
+                        height: 32,
+                        px: 1,
+                        bgcolor: (theme) => alpha(theme.palette.grey[800], 0.85),
+                        backdropFilter: 'blur(8px)',
+                        color: '#FFFFFF',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+                        '& .MuiChip-icon': {
+                          color: '#FFFFFF',
+                          opacity: 1,
+                          fontSize: '1.2rem',
+                          marginLeft: '4px',
+                        },
+                      }}
+                    />
+                  )}
                   {allImages.length > 0 ? (
                     <Box
                       component="img"
@@ -281,7 +325,7 @@ export default function PetDetailPage() {
               <AnimatedSection direction="right">
                 <Chip
                   label={status.label}
-                  color={status.color}
+                  color={status.color as any}
                   size="small"
                   sx={{ mb: 1.5, fontWeight: 600 }}
                 />
