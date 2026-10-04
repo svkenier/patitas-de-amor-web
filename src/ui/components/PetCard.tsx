@@ -284,11 +284,13 @@ const PetCard = memo(function PetCard({ pet, loading = 'lazy', baseRoute = '/mas
             color="text.secondary"
             sx={{
               display:           '-webkit-box',
-              WebkitLineClamp:   2,
+              WebkitLineClamp:   3,
               WebkitBoxOrient:   'vertical',
               overflow:          'hidden',
-              lineHeight:        1.5,
-              minHeight:         '3em',
+              textOverflow:      'ellipsis',
+              wordBreak:         'break-word',
+              lineHeight:        1.4,
+              fontSize:          '0.875rem',
             }}
           >
             {pet.description || 'Sin descripción disponible.'}

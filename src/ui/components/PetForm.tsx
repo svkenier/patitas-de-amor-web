@@ -285,6 +285,7 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
           tamano: formik.values.tamano,
           edad_aproximada: formik.values.edad_aproximada,
           peso_kg: formik.values.peso_kg ? parseFloat(formik.values.peso_kg as string) : undefined,
+          is_active: initial?.attributes?.['is_active'] !== undefined ? Boolean(initial.attributes['is_active']) : true,
           destacado: formik.values.destacado,
           vacunado: formik.values.vacunado,
           esterilizado: formik.values.esterilizado,
@@ -346,17 +347,17 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ pt: 2 }}>
+      <DialogContent dividers sx={{ p: 3 }}>
         {error && (
-          <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>
+          <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2.5 }}>
             {error}
           </Alert>
         )}
 
-        <Typography variant="subtitle2" color="text.secondary" fontWeight={700} mb={1.5}>
-          Datos básicos
+        <Typography variant="overline" color="text.secondary" fontWeight={600} letterSpacing={1} display="block" mb={2}>
+          DATOS BÁSICOS
         </Typography>
-        <Grid container spacing={2} mb={2}>
+        <Grid container spacing={2.5} mb={1}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               label="Nombre/Título *"
@@ -390,6 +391,7 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
               </Select>
             </FormControl>
           </Grid>
+          
           <Grid size={{ xs: 6, sm: 3 }}>
             <TextField
               label="Raza/Categoría"
@@ -438,69 +440,81 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
           </Grid>
         </Grid>
 
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ my: 2.5 }} />
 
-        <Typography variant="subtitle2" color="text.secondary" fontWeight={700} mb={1.5}>
-          Estado y descripción
+        <Typography variant="overline" color="text.secondary" fontWeight={600} letterSpacing={1} display="block" mb={2}>
+          ESTADO Y PUBLICACIÓN
         </Typography>
-        <Grid container spacing={2} mb={2}>
+        <Grid container spacing={2.5} mb={1}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" error={formik.touched.status && Boolean(formik.errors.status)}>
-              <InputLabel>Estado</InputLabel>
-              <Select name="status" value={formik.values.status} label="Estado" onChange={formik.handleChange} onBlur={formik.handleBlur}>
+              <InputLabel>Estado de adopción</InputLabel>
+              <Select name="status" value={formik.values.status} label="Estado de adopción" onChange={formik.handleChange} onBlur={formik.handleBlur}>
                 <MenuItem value="disponible">Disponible</MenuItem>
                 <MenuItem value="en_proceso">En proceso</MenuItem>
                 <MenuItem value="adoptado">Adoptado</MenuItem>
-                <MenuItem value="active">Activo</MenuItem>
-                <MenuItem value="inactive">Inactivo</MenuItem>
               </Select>
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center', height: '100%' }}>
               <FormControlLabel
                 control={<Switch name="destacado" checked={formik.values.destacado} onChange={formik.handleChange} color="warning" />}
                 label="Destacado ⭐"
               />
-              <FormControlLabel
-                control={<Switch name="vacunado" checked={formik.values.vacunado} onChange={formik.handleChange} color="success" />}
-                label="Vacunado"
-              />
-              <FormControlLabel
-                control={<Switch name="esterilizado" checked={formik.values.esterilizado} onChange={formik.handleChange} color="success" />}
-                label="Esterilizado"
-              />
-              <FormControlLabel
-                control={<Switch name="desparasitado" checked={formik.values.desparasitado} onChange={formik.handleChange} color="success" />}
-                label="Desparasitado"
-              />
             </Box>
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Descripción"
-              name="description"
-              value={formik.values.description}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              fullWidth
-              multiline
-              rows={3}
-              size="small"
-            />
           </Grid>
         </Grid>
 
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ my: 2.5 }} />
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-          <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
-            Fotos
+        <Typography variant="overline" color="text.secondary" fontWeight={600} letterSpacing={1} display="block" mb={2}>
+          FICHA MÉDICA
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 1 }}>
+          <FormControlLabel
+            control={<Switch name="vacunado" checked={formik.values.vacunado} onChange={formik.handleChange} color="success" />}
+            label="Vacunado"
+          />
+          <FormControlLabel
+            control={<Switch name="esterilizado" checked={formik.values.esterilizado} onChange={formik.handleChange} color="success" />}
+            label="Esterilizado"
+          />
+          <FormControlLabel
+            control={<Switch name="desparasitado" checked={formik.values.desparasitado} onChange={formik.handleChange} color="success" />}
+            label="Desparasitado"
+          />
+        </Box>
+
+        <Divider sx={{ my: 2.5 }} />
+
+        <Typography variant="overline" color="text.secondary" fontWeight={600} letterSpacing={1} display="block" mb={2}>
+          DESCRIPCIÓN E HISTORIA
+        </Typography>
+        <Box sx={{ mb: 1 }}>
+          <TextField
+            label="Descripción"
+            name="description"
+            value={formik.values.description}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            fullWidth
+            multiline
+            minRows={3}
+            size="small"
+          />
+        </Box>
+
+        <Divider sx={{ my: 2.5 }} />
+
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="overline" color="text.secondary" fontWeight={600} letterSpacing={1}>
+            FOTOGRAFÍAS
           </Typography>
           {imgLoading && <CircularProgress size={16} />}
         </Box>
 
-        <Grid container spacing={2}>
+        <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
               Foto Principal (Opcional, pero recomendado)

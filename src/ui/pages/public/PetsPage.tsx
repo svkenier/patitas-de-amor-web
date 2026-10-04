@@ -69,6 +69,7 @@ export default function PetsPage() {
     const q = filters.busqueda?.trim().toLowerCase() ?? '';
 
     const results = data.records.filter((p) => {
+      if (p.attributes?.is_active === false) return false;
       const raza = (p.attributes?.['raza'] as string) ?? '';
       const especie = (p.attributes?.['especie'] as string) ?? '';
       const sexo = (p.attributes?.['sexo'] as string) ?? '';

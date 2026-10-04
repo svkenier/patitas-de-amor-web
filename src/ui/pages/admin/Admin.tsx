@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
+import { alpha } from '@mui/material/styles';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
@@ -41,6 +42,8 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PetsRoundedIcon from '@mui/icons-material/PetsRounded';
 import MenuIcon from '@mui/icons-material/Menu';
 import PublicIcon from '@mui/icons-material/Public';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -49,6 +52,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
+import CardActionArea from '@mui/material/CardActionArea';
 import Stack from '@mui/material/Stack';
 import Navbar from '@ui/components/Navbar';
 import PetForm from '@ui/components/PetForm';
@@ -58,7 +62,7 @@ import DomainManager from '@ui/pages/admin/DomainManager';
 import AnnouncementsManager from '@ui/components/AnnouncementsManager';
 import DomainAlert from '@ui/components/DomainAlert';
 import { useAuth } from '@ui/context/AuthContext';
-import { get, del, formatApiError } from '@core/api/client';
+import { get, del, put, formatApiError, clearEtagCache } from '@core/api/client';
 import { ROLE_LEVEL } from '@core/types/user';
 import type { BaseRecord, PaginatedRecords } from '@core/types/record';
 
@@ -140,6 +144,58 @@ export default function Admin() {
     },
     onError: (error) => {
       showToast(formatApiError(error, 'Error al eliminar el registro'), 'error');
+    },
+  });
+
+  const toggleVisibilityMutation = useMutation({
+    onMutate: async (pet: BaseRecord) => {
+      await qc.cancelQueries({ queryKey: ['pets-index'] });
+      const previousPets = qc.getQueryData<PaginatedRecords>(['pets-index']);
+
+      if (previousPets) {
+        qc.setQueryData<PaginatedRecords>(['pets-index'], {
+          ...previousPets,
+          records: previousPets.records.map((p) => {
+            if (p.id === pet.id) {
+              const currentActive = p.attributes?.is_active !== undefined ? Boolean(p.attributes.is_active) : true;
+              return {
+                ...p,
+                attributes: {
+                  ...p.attributes,
+                  is_active: !currentActive,
+                }
+              };
+            }
+            return p;
+          }),
+        });
+      }
+
+      return { previousPets };
+    },
+    mutationFn: (pet: BaseRecord) => {
+      const currentActive = pet.attributes?.is_active !== undefined ? Boolean(pet.attributes.is_active) : true;
+      const payload = {
+        ...pet,
+        attributes: {
+          ...pet.attributes,
+          is_active: !currentActive
+        }
+      };
+      return put('/collections/pets', payload);
+    },
+    onSuccess: () => {
+      showToast('Visibilidad actualizada');
+    },
+    onError: (error, _pet, context) => {
+      if (context?.previousPets) {
+        qc.setQueryData(['pets-index'], context.previousPets);
+      }
+      showToast(formatApiError(error, 'Error al actualizar visibilidad'), 'error');
+    },
+    onSettled: () => {
+      clearEtagCache('pets');
+      void qc.invalidateQueries({ queryKey: ['pets-index'] });
     },
   });
 
@@ -267,81 +323,95 @@ export default function Admin() {
                   <CardContent><Skeleton variant="rectangular" height={100} /></CardContent>
                 </Card>
               ))
-            ) : petsData?.records.map((pet) => (
+            ) : petsData?.records.map((pet) => {
+              const isActive = pet.attributes?.is_active !== undefined ? Boolean(pet.attributes.is_active) : true;
+              return (
               <Card key={pet.id} variant="outlined" sx={{ borderRadius: 0 }}>
-                <CardContent sx={{ display: 'flex', gap: 2, pb: 1 }}>
-                  {pet.main_image ? (
-                    <Box
-                      component="img"
-                      src={pet.main_image}
-                      alt={pet.title ? `Foto de ${pet.title}` : 'Foto'}
-                      width="80"
-                      height="80"
-                      loading="lazy"
-                      sx={{ width: 80, height: 80, objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <Box sx={{ 
-                      width: 80, height: 80, 
-                      bgcolor: '#F5F5F4', 
-                      border: '1px solid #E7E5E4',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center' 
-                    }}>
-                      <PetsRoundedIcon sx={{ color: 'primary.main', opacity: 0.5, fontSize: 40 }} />
+                <CardActionArea 
+                  onClick={() => window.open(`/mascotas/${pet.id}`, '_blank')}
+                  aria-label={`Ver detalles de ${pet.title}`}
+                  sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start' }}
+                >
+                  <CardContent sx={{ display: 'flex', gap: 2, pb: 1, width: '100%' }}>
+                    {pet.main_image ? (
+                      <Box
+                        component="img"
+                        src={pet.main_image}
+                        alt={pet.title ? `Foto de ${pet.title}` : 'Foto'}
+                        width="80"
+                        height="80"
+                        loading="lazy"
+                        sx={{ 
+                          width: 80, height: 80, objectFit: 'cover',
+                          ...(!isActive ? { filter: 'grayscale(100%)', opacity: 0.6, transition: 'all 0.3s ease' } : {})
+                        }}
+                      />
+                    ) : (
+                      <Box sx={{ 
+                        width: 80, height: 80, 
+                        bgcolor: '#F5F5F4', 
+                        border: '1px solid #E7E5E4',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        ...(!isActive ? { filter: 'grayscale(100%)', opacity: 0.6, transition: 'all 0.3s ease' } : {})
+                      }}>
+                        <PetsRoundedIcon sx={{ color: 'primary.main', opacity: 0.5, fontSize: 40 }} />
+                      </Box>
+                    )}
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" fontWeight={700} lineHeight={1.2} color={!isActive ? 'text.secondary' : 'text.primary'}>
+                        {pet.title} {pet.attributes?.destacado && '⭐'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                        {pet.attributes?.especie as string} • {pet.attributes?.sexo as string} • {(pet.attributes?.edad_aproximada as string) || 'Edad desc.'}
+                      </Typography>
+                      {!isActive ? (
+                        <Chip label="OCULTO" size="small" variant="outlined" sx={{ color: 'text.secondary', borderColor: 'divider' }} />
+                      ) : (
+                        <Chip
+                          label={pet.status.toUpperCase().replace('_', ' ')}
+                          size="small"
+                          variant="outlined"
+                          color={pet.status === 'adoptado' ? 'default' : pet.status === 'en_proceso' ? 'warning' : 'success'}
+                        />
+                      )}
                     </Box>
-                  )}
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
-                      {pet.title} {pet.attributes?.destacado && '⭐'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                      {pet.attributes?.especie as string} • {pet.attributes?.sexo as string} • {(pet.attributes?.edad_aproximada as string) || 'Edad desc.'}
-                    </Typography>
-                    <Chip
-                      label={pet.status}
-                      size="small"
-                      variant="outlined"
-                      color={pet.status === 'adoptado' ? 'default' : pet.status === 'en_proceso' ? 'warning' : 'success'}
-                    />
-                  </Box>
-                </CardContent>
-                <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
-                  <Stack direction="row" spacing={1} width="100%">
-                    <Button 
+                  </CardContent>
+                </CardActionArea>
+                <CardActions sx={{ px: 2, pb: 2, pt: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, width: '100%' }}>
+                  <Tooltip title={isActive ? "Ocultar en catálogo" : "Mostrar en catálogo"}>
+                    <IconButton 
                       size="small" 
-                      variant="outlined" 
-                      color="inherit" 
-                      fullWidth 
-                      href={`/mascotas/${pet.id}`} 
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      startIcon={<OpenInNewIcon />}
+                      onClick={() => toggleVisibilityMutation.mutate(pet)}
+                      disabled={toggleVisibilityMutation.isPending && toggleVisibilityMutation.variables?.id === pet.id}
+                      sx={{ width: 42, height: 42, borderRadius: '8px', border: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}
+                      aria-label="Visibilidad"
                     >
-                      Ver
-                    </Button>
-                    <Button 
+                      {isActive ? <VisibilityIcon color="primary" /> : <VisibilityOffIcon sx={{ color: 'text.disabled' }} />}
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Editar">
+                    <IconButton 
                       size="small" 
-                      variant="contained" 
-                      color="primary" 
-                      fullWidth
                       onClick={() => handleOpenEdit(pet)}
-                      startIcon={<EditIcon />}
+                      sx={{ width: 42, height: 42, borderRadius: '8px', border: '1px solid', borderColor: (theme) => alpha(theme.palette.primary.main, 0.2), bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), color: 'primary.main' }}
+                      aria-label="Editar"
                     >
-                      Editar
-                    </Button>
-                    <Button 
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Eliminar">
+                    <IconButton 
                       size="small" 
-                      variant="outlined" 
-                      color="error" 
                       onClick={() => setPetToDelete(pet)}
-                      sx={{ minWidth: 40, px: 0 }}
+                      sx={{ width: 42, height: 42, borderRadius: '8px', border: '1px solid', borderColor: (theme) => alpha(theme.palette.error.main, 0.2), bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), color: 'error.main' }}
+                      aria-label="Eliminar"
                     >
                       <DeleteIcon />
-                    </Button>
-                  </Stack>
+                    </IconButton>
+                  </Tooltip>
                 </CardActions>
               </Card>
-            ))}
+            )})}
             {(!petsData || petsData.records.length === 0) && !petsLoading && (
               <AdminEmptyState 
                 iconType="pets"
@@ -377,7 +447,9 @@ export default function Admin() {
                         ))}
                       </TableRow>
                     ))
-                  : petsData?.records.map((pet) => (
+                  : petsData?.records.map((pet) => {
+                      const isActive = pet.attributes?.is_active !== undefined ? Boolean(pet.attributes.is_active) : true;
+                      return (
                       <TableRow key={pet.id} hover>
                         <TableCell>
                           {pet.main_image ? (
@@ -388,36 +460,57 @@ export default function Admin() {
                               width="40"
                               height="40"
                               loading="lazy"
-                              sx={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover' }}
+                              sx={{ 
+                                width: 40, height: 40, borderRadius: 0, objectFit: 'cover',
+                                ...(!isActive ? { filter: 'grayscale(100%)', opacity: 0.6, transition: 'all 0.3s ease' } : {})
+                              }}
                             />
                           ) : (
                             <Box sx={{ 
                               width: 40, height: 40, 
                               bgcolor: '#F5F5F4', 
                               border: '1px solid #E7E5E4',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              ...(!isActive ? { filter: 'grayscale(100%)', opacity: 0.6, transition: 'all 0.3s ease' } : {})
                             }}>
                               <PetsRoundedIcon sx={{ color: 'primary.main', opacity: 0.5, fontSize: 24 }} />
                             </Box>
                           )}
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" fontWeight={600}>{pet.title}</Typography>
+                          <Typography variant="body2" fontWeight={600} color={!isActive ? 'text.secondary' : 'text.primary'}>
+                            {pet.title}
+                          </Typography>
                           <Typography variant="caption" color="text.secondary">{pet.id}</Typography>
                         </TableCell>
                         <TableCell sx={{ textTransform: 'capitalize' }}>{(pet.attributes?.especie as string) || '—'}</TableCell>
                         <TableCell>
-                          <Chip
-                            label={pet.status}
-                            size="small"
-                            variant="outlined"
-                            color={pet.status === 'adoptado' ? 'default' : pet.status === 'en_proceso' ? 'warning' : 'success'}
-                          />
+                          {!isActive ? (
+                            <Chip label="OCULTO" size="small" variant="outlined" sx={{ color: 'text.secondary', borderColor: 'divider' }} />
+                          ) : (
+                            <Chip
+                              label={pet.status.toUpperCase().replace('_', ' ')}
+                              size="small"
+                              variant="outlined"
+                              color={pet.status === 'adoptado' ? 'default' : pet.status === 'en_proceso' ? 'warning' : 'success'}
+                            />
+                          )}
                         </TableCell>
                         <TableCell>
                           {pet.attributes?.destacado ? <Chip label="⭐" size="small" /> : '—'}
                         </TableCell>
                         <TableCell align="right">
+                          <Tooltip title={isActive ? "Ocultar en catálogo" : "Mostrar en catálogo"}>
+                            <IconButton 
+                              aria-label={isActive ? "Ocultar" : "Mostrar"} 
+                              size="small" 
+                              color={isActive ? "primary" : "default"} 
+                              onClick={() => toggleVisibilityMutation.mutate(pet)}
+                              disabled={toggleVisibilityMutation.isPending && toggleVisibilityMutation.variables?.id === pet.id}
+                            >
+                              {isActive ? <VisibilityIcon fontSize="small" color="primary" /> : <VisibilityOffIcon fontSize="small" sx={{ color: 'text.disabled' }} />}
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Ver ficha pública">
                             <IconButton aria-label="Ver ficha pública" size="small" href={`/mascotas/${pet.id}`} target="_blank" rel="noopener noreferrer">
                               <OpenInNewIcon fontSize="small" />
@@ -435,7 +528,8 @@ export default function Admin() {
                           </Tooltip>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                 {(!petsData || petsData.records.length === 0) && !petsLoading && (
                   <TableRow>
                     <TableCell colSpan={6} sx={{ p: 0, borderBottom: 0 }}>

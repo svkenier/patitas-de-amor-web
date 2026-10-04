@@ -51,7 +51,7 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 20_000, // 20 segundos máximo por petición
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json; charset=UTF-8',
   },
   validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
 });

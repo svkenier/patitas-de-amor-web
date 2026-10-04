@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
+import { alpha } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -29,12 +30,15 @@ import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
+import CardActionArea from '@mui/material/CardActionArea';
 import Stack from '@mui/material/Stack';
 
-import { get, del, formatApiError, clearEtagCache } from '@core/api/client';
+import { get, put, del, formatApiError, clearEtagCache } from '@core/api/client';
 import AdminEmptyState from '@ui/components/AdminEmptyState';
 import AnnouncementForm from './AnnouncementForm';
 import type { BaseRecord } from '@core/types/record';
@@ -68,6 +72,53 @@ export default function AnnouncementsManager() {
     },
     onError: (err) => {
       setErrorMsg(formatApiError(err, 'Error al eliminar el anuncio'));
+    }
+  });
+
+  const toggleVisibilityMutation = useMutation({
+    onMutate: async (announcement: BaseRecord) => {
+      await qc.cancelQueries({ queryKey: ['announcements'] });
+      const previous = qc.getQueryData<BaseRecord[]>(['announcements']);
+
+      if (previous) {
+        qc.setQueryData<BaseRecord[]>(['announcements'], previous.map((a) => {
+          if (a.id === announcement.id) {
+            const currentActive = a.attributes?.is_active !== undefined ? Boolean(a.attributes.is_active) : true;
+            return {
+              ...a,
+              attributes: {
+                ...a.attributes,
+                is_active: !currentActive,
+              }
+            };
+          }
+          return a;
+        }));
+      }
+
+      return { previous };
+    },
+    mutationFn: (announcement: BaseRecord) => {
+      const currentActive = announcement.attributes?.is_active !== undefined ? Boolean(announcement.attributes.is_active) : true;
+      const payload = {
+        ...announcement,
+        attributes: {
+          ...announcement.attributes,
+          is_active: !currentActive
+        }
+      };
+      return put('/collections/announcements', payload);
+    },
+    onError: (err, _announcement, context) => {
+      if (context?.previous) {
+        qc.setQueryData(['announcements'], context.previous);
+      }
+      setErrorMsg(formatApiError(err, 'Error al actualizar visibilidad'));
+    },
+    onSettled: () => {
+      clearEtagCache('announcements');
+      void qc.invalidateQueries({ queryKey: ['announcements'] });
+      void qc.invalidateQueries({ queryKey: ['announcements-public'] });
     }
   });
 
@@ -113,67 +164,85 @@ export default function AnnouncementsManager() {
               <CardContent><Skeleton variant="rectangular" height={100} /></CardContent>
             </Card>
           ))
-        ) : announcements?.map((a) => (
+        ) : announcements?.map((a) => {
+          const isActive = a.attributes?.is_active !== undefined ? Boolean(a.attributes.is_active) : true;
+          return (
           <Card key={a.id} variant="outlined" sx={{ borderRadius: 0 }}>
-            <CardContent sx={{ display: 'flex', gap: 2, pb: 1 }}>
-              {a.main_image ? (
-                <Box
-                  component="img"
-                  src={a.main_image}
-                  alt={a.title ? `Imagen de ${a.title}` : 'Imagen del anuncio'}
-                  sx={{ width: 80, height: 80, objectFit: 'cover' }}
-                />
-              ) : (
-                <Box sx={{ 
-                  width: 80, height: 80, 
-                  bgcolor: '#F5F5F4', 
-                  border: '1px solid #E7E5E4',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center' 
-                }}>
-                  <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: 0.5, fontSize: 40 }} />
-                </Box>
-              )}
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="h6" fontWeight={700} lineHeight={1.2} mb={0.5}>
-                  {a.title}
-                </Typography>
-                <Chip label={(TYPE_LABELS[a?.type as keyof typeof TYPE_LABELS] || 'Otro').toUpperCase()} size="small" variant="outlined" sx={{ mb: 1, backgroundColor: 'transparent', color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', borderColor: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', fontWeight: 600 }} />
-                <Typography variant="body2" color="text.secondary" display="block">
-                  {a.attributes?.date as string} {a.attributes?.time && `• ${a.attributes.time}`}
-                </Typography>
-                <Chip
-                  label={a.status === 'active' ? 'Activo' : 'Inactivo'}
-                  size="small"
-                  color={a.status === 'active' ? 'success' : 'default'}
-                  sx={{ mt: 1 }}
-                />
-              </Box>
-            </CardContent>
-            <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
-              <Stack direction="row" spacing={1} width="100%">
-                <Button 
-                  size="small" 
-                  variant="contained" 
-                  color="primary" 
-                  fullWidth
-                  onClick={() => handleOpenForm(a)}
-                  startIcon={<EditIcon />}
+                <CardActionArea 
+                  component="div"
+                  sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start' }}
                 >
-                  Editar
-                </Button>
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  color="error" 
-                  onClick={() => setDeleting(a)}
-                  sx={{ minWidth: 40, px: 0 }}
-                >
-                  <DeleteIcon />
-                </Button>
-              </Stack>
-            </CardActions>
+                  <CardContent sx={{ display: 'flex', gap: 2, pb: 1, width: '100%' }}>
+                    {a.main_image ? (
+                      <Box
+                        component="img"
+                        src={a.main_image}
+                        alt={a.title ? `Imagen de ${a.title}` : 'Imagen del anuncio'}
+                        sx={{ width: 80, height: 80, objectFit: 'cover', filter: isActive ? 'none' : 'grayscale(100%)', opacity: isActive ? 1 : 0.6, transition: 'filter 0.2s ease, opacity 0.2s ease' }}
+                      />
+                    ) : (
+                      <Box sx={{ 
+                        width: 80, height: 80, 
+                        bgcolor: '#F5F5F4', 
+                        border: '1px solid #E7E5E4',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                      }}>
+                        <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: isActive ? 0.5 : 0.2, fontSize: 40, filter: isActive ? 'none' : 'grayscale(100%)', transition: 'filter 0.2s ease, opacity 0.2s ease' }} />
+                      </Box>
+                    )}
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" fontWeight={700} lineHeight={1.2} mb={0.5} color={!isActive ? 'text.secondary' : 'text.primary'}>
+                        {a.title}
+                      </Typography>
+                      <Chip label={(TYPE_LABELS[a?.type as keyof typeof TYPE_LABELS] || 'Otro').toUpperCase()} size="small" variant="outlined" sx={{ mb: 1, backgroundColor: 'transparent', color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', borderColor: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', fontWeight: 600 }} />
+                      <Typography variant="body2" color="text.secondary" display="block">
+                        {a.attributes?.date as string} {a.attributes?.time && `• ${a.attributes.time}`}
+                      </Typography>
+                      <Chip
+                        label={isActive ? 'ACTIVO' : 'OCULTO'}
+                        size="small"
+                        color={isActive ? 'success' : 'default'}
+                        sx={{ mt: 1 }}
+                      />
+                    </Box>
+                  </CardContent>
+                </CardActionArea>
+                <CardActions sx={{ px: 2, pb: 2, pt: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, width: '100%' }}>
+                  <Tooltip title={isActive ? "Ocultar en Home" : "Mostrar en Home"}>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => toggleVisibilityMutation.mutate(a)}
+                      disabled={toggleVisibilityMutation.isPending && toggleVisibilityMutation.variables?.id === a.id}
+                      sx={{ width: 42, height: 42, borderRadius: '8px', border: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}
+                      aria-label="Visibilidad"
+                    >
+                      {isActive ? <VisibilityIcon color="primary" /> : <VisibilityOffIcon sx={{ color: 'text.disabled' }} />}
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Editar">
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleOpenForm(a)}
+                      sx={{ width: 42, height: 42, borderRadius: '8px', border: '1px solid', borderColor: (theme) => alpha(theme.palette.primary.main, 0.2), bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), color: 'primary.main' }}
+                      aria-label="Editar"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Eliminar">
+                    <IconButton 
+                      size="small" 
+                      onClick={() => setDeleting(a)}
+                      sx={{ width: 42, height: 42, borderRadius: '8px', border: '1px solid', borderColor: (theme) => alpha(theme.palette.error.main, 0.2), bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), color: 'error.main' }}
+                      aria-label="Eliminar"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </CardActions>
           </Card>
-        ))}
+          );
+        })}
         {!isLoading && announcements?.length === 0 && (
           <AdminEmptyState 
             iconType="events"
@@ -210,7 +279,9 @@ export default function AnnouncementsManager() {
                     ))}
                   </TableRow>
                 ))
-              : announcements?.map((a) => (
+              : announcements?.map((a) => {
+                  const isActive = a.attributes?.is_active !== undefined ? Boolean(a.attributes.is_active) : true;
+                  return (
                   <TableRow key={a.id} hover>
                     <TableCell>
                       {a.main_image ? (
@@ -218,7 +289,7 @@ export default function AnnouncementsManager() {
                           component="img"
                           src={a.main_image}
                           alt={a.title ? `Imagen miniatura de ${a.title}` : 'Imagen del anuncio'}
-                          sx={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover' }}
+                          sx={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover', filter: isActive ? 'none' : 'grayscale(100%)', opacity: isActive ? 1 : 0.6, transition: 'filter 0.2s ease, opacity 0.2s ease' }}
                         />
                       ) : (
                         <Box sx={{ 
@@ -227,12 +298,12 @@ export default function AnnouncementsManager() {
                           border: '1px solid #E7E5E4',
                           display: 'flex', alignItems: 'center', justifyContent: 'center' 
                         }}>
-                          <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: 0.5, fontSize: 24 }} />
+                          <CampaignRoundedIcon sx={{ color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || 'primary.main', opacity: isActive ? 0.5 : 0.2, fontSize: 24, filter: isActive ? 'none' : 'grayscale(100%)', transition: 'filter 0.2s ease, opacity 0.2s ease' }} />
                         </Box>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={600}>{a.title}</Typography>
+                      <Typography variant="body2" fontWeight={600} color={!isActive ? 'text.secondary' : 'text.primary'}>{a.title}</Typography>
                     </TableCell>
                     <TableCell>
                       <Chip label={(TYPE_LABELS[a?.type as keyof typeof TYPE_LABELS] || 'Otro').toUpperCase()} size="small" variant="outlined" sx={{ backgroundColor: 'transparent', color: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', borderColor: TYPE_COLORS[a?.type as keyof typeof TYPE_COLORS] || '#71717A', fontWeight: 600 }} />
@@ -243,12 +314,17 @@ export default function AnnouncementsManager() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={a.status === 'active' ? 'Activo' : 'Inactivo'}
+                        label={isActive ? 'ACTIVO' : 'OCULTO'}
                         size="small"
-                        color={a.status === 'active' ? 'success' : 'default'}
+                        color={isActive ? 'success' : 'default'}
                       />
                     </TableCell>
                     <TableCell align="right">
+                      <Tooltip title={isActive ? "Ocultar en Home" : "Mostrar en Home"}>
+                        <IconButton aria-label="Visibilidad" size="small" color={isActive ? "primary" : "default"} onClick={() => toggleVisibilityMutation.mutate(a)} disabled={toggleVisibilityMutation.isPending && toggleVisibilityMutation.variables?.id === a.id}>
+                          {isActive ? <VisibilityIcon fontSize="small" color="primary" /> : <VisibilityOffIcon fontSize="small" sx={{ color: 'text.disabled' }} />}
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="Editar">
                         <IconButton aria-label="Acción" size="small" color="primary" onClick={() => handleOpenForm(a)}>
                           <EditIcon fontSize="small" />
@@ -261,7 +337,8 @@ export default function AnnouncementsManager() {
                       </Tooltip>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
             {!isLoading && announcements?.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} sx={{ p: 0, borderBottom: 0 }}>

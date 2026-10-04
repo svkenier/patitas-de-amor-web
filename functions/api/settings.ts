@@ -24,7 +24,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       return new Response(JSON.stringify({}), { status: 200, headers });
     }
 
-    const content = atob(ghRes.data.content);
+    const binaryStr = atob(ghRes.data.content);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    const content = new TextDecoder().decode(bytes);
     return new Response(content, { status: 200, headers });
   } catch (err) {
     console.warn('[settings.ts] Error o repositorio vacío, devolviendo fallback vacío.', err);

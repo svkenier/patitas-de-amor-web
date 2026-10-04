@@ -87,7 +87,7 @@ export default function Home() {
   const displayPets = useMemo(() => {
     if (!data?.records) return [];
     return data.records
-      .filter((p) => p.status !== 'adoptado')
+      .filter((p) => p.status !== 'adoptado' && p.attributes?.is_active !== false)
       .sort((a, b) => {
         const aDestacado = Boolean(a.attributes?.destacado);
         const bDestacado = Boolean(b.attributes?.destacado);

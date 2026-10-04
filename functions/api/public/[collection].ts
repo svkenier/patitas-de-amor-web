@@ -41,7 +41,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     let records: any[] = [];
     if (ghRes.data) {
       try {
-        const parsed = JSON.parse(atob(ghRes.data.content));
+        const binaryStr = atob(ghRes.data.content);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const decodedStr = new TextDecoder().decode(bytes);
+        const parsed = JSON.parse(decodedStr);
         if (Array.isArray(parsed)) records = parsed;
         else {
           const firstArray = Object.values(parsed).find(Array.isArray);

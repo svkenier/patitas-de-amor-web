@@ -174,7 +174,7 @@ function AnnouncementCard({ announcement, whatsappNumber }: { announcement: Base
           <Typography 
             variant="body2" 
             color="text.secondary" 
-            sx={!expanded ? { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : { whiteSpace: 'pre-line' }}
+            sx={!expanded ? { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', fontSize: '0.875rem', lineHeight: 1.4 } : { whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '0.875rem', lineHeight: 1.4 }}
           >
             {announcement?.description?.trim() || 'Sin descripción disponible'}
           </Typography>
@@ -242,12 +242,7 @@ export default function AnnouncementsSection() {
   });
 
   const activeAnnouncements = announcements?.filter(a => 
-    a && (
-      a.status === 'active' || 
-      (a as any).is_active === true || 
-      String((a as any).is_active) === 'true' || 
-      ((a as any).is_active as unknown) === 1
-    )
+    a && a.status !== 'inactive' && a.attributes?.is_active !== false
   ) || [];
 
   const orderedAnnouncements = activeAnnouncements;

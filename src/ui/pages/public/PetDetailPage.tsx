@@ -72,7 +72,9 @@ export default function PetDetailPage() {
     queryFn:  async () => {
       const records = await get<BaseRecord[]>('/public/pets');
       const found = records?.find(p => p.id === id);
-      if (!found) throw new Error('Registro no encontrado');
+      if (!found || found.attributes?.is_active === false) {
+        throw new Error('Registro no encontrado o no visible');
+      }
       return found;
     },
     enabled: Boolean(id),

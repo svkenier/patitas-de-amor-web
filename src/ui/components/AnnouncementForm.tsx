@@ -21,8 +21,7 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
+
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
@@ -61,11 +60,9 @@ const EMPTY = {
   title: '',
   type: 'general' as AnnouncementType,
   description: '',
-  alt_text: '',
   date: new Date().toISOString().split('T')[0],
   time: '',
   location: '',
-  is_active: true,
 };
 
 const validationSchema = Yup.object({
@@ -79,7 +76,6 @@ const validationSchema = Yup.object({
   }),
   time: Yup.string(),
   location: Yup.string(),
-  is_active: Yup.boolean(),
 });
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -94,11 +90,9 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
           title:       initial.title,
           type:        initial.type,
           description: initial.description,
-          alt_text:    (initial.attributes?.alt_text as string) ?? '',
           date:        (initial.attributes?.date as string) ?? '',
           time:        (initial.attributes?.time as string) ?? '',
           location:    (initial.attributes?.location as string) ?? '',
-          is_active:   initial.status === 'active',
         }
       : EMPTY,
     enableReinitialize: true,
@@ -146,26 +140,36 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
 
   const mutation = useMutation({
     mutationFn: () => {
+      const currentActive = initial?.attributes?.is_active !== undefined ? Boolean(initial.attributes.is_active) : true;
+      const autoAltText = [
+        formik.values.type ? `${formik.values.type}:` : 'Flyer informativo:',
+        formik.values.title,
+        formik.values.location ? `en ${formik.values.location}` : '',
+        formik.values.date ? `(${formik.values.date})` : ''
+      ].filter(Boolean).join(' ');
       const payload = {
         ...(isEdit && initial?.id ? { id: initial.id } : {}),
         title: formik.values.title,
         type: formik.values.type,
         description: formik.values.description,
-        status: formik.values.is_active ? 'active' : 'inactive',
+        status: initial?.status ?? 'active',
         attributes: {
-          alt_text: formik.values.alt_text,
+          ...((isEdit ? initial?.attributes : {}) as any),
+          alt_text: autoAltText,
           date: formik.values.date,
           time: formik.values.time,
           location: formik.values.location,
+          is_active: currentActive,
         },
         ...(base64 ? { 
           main_image_base64: base64,
           attributes: {
             ...((isEdit ? initial?.attributes : {}) as any),
-            alt_text: formik.values.alt_text,
+            alt_text: autoAltText,
             date: formik.values.date,
             time: formik.values.time,
             location: formik.values.location,
+            is_active: currentActive,
             image_width: imgWidth,
             image_height: imgHeight,
           }
@@ -241,7 +245,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: 200,
+                height: 140,
                 border: '2px dashed',
                 borderColor: preview ? 'primary.main' : 'divider',
                 borderRadius: 0,
@@ -408,28 +412,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
               value={formik.values.description}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              error={formik.touched.description && Boolean(formik.errors.description)}
-              helperText={formik.touched.description && (formik.errors.description as string)}
-              fullWidth multiline rows={3} size="small"
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Texto alternativo para accesibilidad (Opcional)"
-              name="alt_text"
-              value={formik.values.alt_text}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              fullWidth size="small"
-              placeholder="Ej: Flyer amarillo indicando fecha y hora de la jornada de vacunación"
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <FormControlLabel
-              control={<Switch name="is_active" checked={formik.values.is_active} onChange={formik.handleChange} color="success" />}
-              label={formik.values.is_active ? "Activo (Visible en Home)" : "Inactivo (Oculto)"}
+              fullWidth multiline minRows={2} maxRows={4} size="small"
             />
           </Grid>
         </Grid>
