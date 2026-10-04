@@ -53,7 +53,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import CardActionArea from '@mui/material/CardActionArea';
-import Stack from '@mui/material/Stack';
+
 import Navbar from '@ui/components/Navbar';
 import PetForm from '@ui/components/PetForm';
 import UserManagement from '@ui/pages/admin/UserManagement';
