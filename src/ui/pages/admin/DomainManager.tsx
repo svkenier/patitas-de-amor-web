@@ -14,6 +14,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
+import Divider from '@mui/material/Divider';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -146,34 +147,39 @@ export default function DomainManager() {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12 }}>
           <Card variant="outlined" sx={{ bgcolor: 'background.paper', borderColor: (diffDays <= 30 && monitoringActive) ? 'error.main' : 'divider' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+              <Box sx={{ px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="overline" color="text.secondary">ESTADO DEL SERVICIO</Typography>
                 <FormControlLabel
                   control={<Switch checked={monitoringActive} onChange={toggleMonitoring} color="primary" disabled={mutation.isPending} />}
                   label="Monitoreo Activo"
                   labelPlacement="start"
+                  sx={{ m: 0 }}
                 />
               </Box>
               
-              <Typography variant="h4" fontWeight={600} gutterBottom>
-                {formattedCurrentDate}
-              </Typography>
+              <Divider />
               
-              <Box sx={{ mt: 1 }}>
-                {monitoringActive ? (
-                  diffDays <= 30 ? (
-                    <Chip label={`QUEDAN ${diffDays} DÍAS`} color="error" size="small" sx={{ fontWeight: 700 }} />
+              <Box sx={{ px: 3, py: 3 }}>
+                <Typography variant="h4" fontWeight={600} gutterBottom>
+                  {formattedCurrentDate}
+                </Typography>
+                
+                <Box sx={{ mt: 1 }}>
+                  {monitoringActive ? (
+                    diffDays <= 30 ? (
+                      <Chip label={`QUEDAN ${diffDays} DÍAS`} color="error" size="small" sx={{ fontWeight: 700 }} />
+                    ) : (
+                      <Typography variant="body2" color="success.main" fontWeight={600}>
+                        Tiempo restante para el corte anual: {diffDays} días
+                      </Typography>
+                    )
                   ) : (
-                    <Typography variant="body2" color="success.main" fontWeight={600}>
-                      Tiempo restante para el corte anual: {diffDays} días
+                    <Typography variant="body2" color="text.secondary">
+                      ○ Monitoreo pausado (Sin alertas globales)
                     </Typography>
-                  )
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    ○ Monitoreo pausado (Sin alertas globales)
-                  </Typography>
-                )}
+                  )}
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -246,7 +252,16 @@ export default function DomainManager() {
                 <Button 
                   variant="contained" 
                   size="large"
-                  sx={{ bgcolor: '#212121', color: '#fff', '&:hover': { bgcolor: '#000' } }}
+                  sx={{ 
+                    bgcolor: '#0f172a', 
+                    color: '#fff', 
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 4,
+                    '&:hover': { bgcolor: '#1e293b' },
+                    '&.Mui-disabled': { bgcolor: 'rgba(0, 0, 0, 0.12)', color: 'rgba(0, 0, 0, 0.26)' }
+                  }}
                   onClick={() => {
                     if (isSubmitDisabled) return;
                     setConfirmOpen(true);
