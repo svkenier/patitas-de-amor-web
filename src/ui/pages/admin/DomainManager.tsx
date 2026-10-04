@@ -152,8 +152,12 @@ export default function DomainManager() {
                 <Typography variant="overline" color="text.secondary">ESTADO DEL SERVICIO</Typography>
                 <FormControlLabel
                   control={<Switch checked={monitoringActive} onChange={toggleMonitoring} color="primary" disabled={mutation.isPending} />}
-                  label="Monitoreo Activo"
-                  labelPlacement="start"
+                  label={
+                    <Typography fontWeight={700} color="text.primary">
+                      Monitoreo Activo
+                    </Typography>
+                  }
+                  labelPlacement="end"
                   sx={{ m: 0 }}
                 />
               </Box>
