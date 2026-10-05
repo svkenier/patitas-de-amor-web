@@ -40,8 +40,8 @@ export function canCreateRole(actorRole, newRole) {
     if (actorRole === 'owner')
         return true;
     if (actorRole === 'superadmin')
-        return newRole !== 'owner';
+        return newRole === 'encargado' || newRole === 'voluntario';
     if (actorRole === 'encargado')
-        return newRole !== 'superadmin' && newRole !== 'owner';
+        return newRole === 'voluntario';
     return false;
 }

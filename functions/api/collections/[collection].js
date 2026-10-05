@@ -51,6 +51,11 @@ async function handleUpsert(request, env, paths, isUpdate) {
             newImages.push({ path: newImgPath, base64: body.main_image_base64 });
             mainImageUrl = cdnImageUrl(newImgPath, env);
         }
+        else if (body.main_image_url === '') {
+            if (existingRecord?.main_image)
+                imagesToDelete.push(existingRecord.main_image);
+            mainImageUrl = '';
+        }
         const existingGallery = body.gallery_existing ?? existingRecord?.gallery ?? [];
         const newGalleryUrls = [];
         if (body.gallery_base64?.length) {

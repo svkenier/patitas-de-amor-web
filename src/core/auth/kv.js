@@ -22,6 +22,13 @@ export class ConfigurationError extends Error {
 }
 export const TTL_30_DAYS = 30 * 24 * 60 * 60; // 2,592,000 segundos
 export const TTL_6_MONTHS = 180 * 24 * 60 * 60; // 15,552,000 segundos
+export function getRoleTTL(role) {
+    if (role === 'owner')
+        return null;
+    if (role === 'superadmin')
+        return TTL_6_MONTHS;
+    return TTL_30_DAYS;
+}
 export function getRedis(env) {
     const missingVars = [];
     if (!env.UPSTASH_REDIS_REST_URL)
@@ -43,8 +50,15 @@ export async function getUser(username, env) {
 }
 export async function setUser(user, env, ttl) {
     const redis = getRedis(env);
-    if (ttl) {
-        await redis.set(userKey(user.username), user, { ex: ttl });
+    let finalTtl = ttl;
+    if (finalTtl === undefined && !user.isProtected && user.role !== 'owner') {
+        const roleTtl = getRoleTTL(user.role);
+        if (roleTtl !== null) {
+            finalTtl = roleTtl;
+        }
+    }
+    if (finalTtl) {
+        await redis.set(userKey(user.username), user, { ex: finalTtl });
     }
     else {
         await redis.set(userKey(user.username), user);
@@ -77,11 +91,14 @@ export async function updateUserPreservingTTL(username, updates, env) {
         await redis.set(userKey(username), updatedUser);
     }
 }
-export async function activateTTL(username, env, durationSeconds = TTL_30_DAYS) {
+export async function activateTTL(username, env, durationSeconds) {
     const user = await getUser(username, env);
-    if (user?.isProtected || (env.ADMIN_USER && username === env.ADMIN_USER))
+    if (!user || user.isProtected || (env.ADMIN_USER && username === env.ADMIN_USER) || user.role === 'owner')
         return;
-    await getRedis(env).expire(userKey(username), durationSeconds);
+    const finalDuration = durationSeconds ?? getRoleTTL(user.role);
+    if (finalDuration !== null) {
+        await getRedis(env).expire(userKey(username), finalDuration);
+    }
 }
 export async function cancelTTL(username, env) {
     await getRedis(env).persist(userKey(username));
@@ -114,6 +131,10 @@ export async function listUsers(env) {
         return [];
     const userKeys = usernames.map(userKey);
     const users = (await redis.mget(...userKeys));
+    const expiredUsernames = usernames.filter((_, idx) => users[idx] === null);
+    if (expiredUsernames.length > 0) {
+        await redis.srem(USER_INDEX, ...expiredUsernames);
+    }
     return users
         .filter((u) => Boolean(u))
         .map(({ password_hash: _ph, ...pub }) => pub)

@@ -38,6 +38,39 @@ export const onRequestPut = async (context) => {
     try {
         const body = await request.json();
         const current = await getFileWithETag(SHELTER_INFO_PATH, env);
+        let currentData = {};
+        if (current.data && current.data.content) {
+            try {
+                currentData = JSON.parse(decodeURIComponent(escape(atob(current.data.content))));
+            }
+            catch (e) {
+                console.warn('[settings.ts] Error decodificando configuración actual', e);
+            }
+        }
+        if (payload.role !== 'owner') {
+            const domainKeys = ['expirationDate', 'monitoringActive', 'domainExpirationDate', 'domainAlertEnabled'];
+            const isDomainModified = domainKeys.some(key => {
+                const newVal = body[key];
+                const oldVal = currentData[key];
+                if (newVal === undefined && oldVal === undefined)
+                    return false;
+                return newVal !== oldVal;
+            });
+            if (isDomainModified) {
+                return new Response(JSON.stringify({
+                    error: 'Acceso denegado: solo el propietario (owner) puede modificar los parámetros de corte y monitoreo del servicio.'
+                }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            // Asegurar que los valores se mantengan inalterados
+            domainKeys.forEach(key => {
+                if (currentData[key] !== undefined) {
+                    body[key] = currentData[key];
+                }
+            });
+        }
         // Convert to string and base64
         const contentStr = JSON.stringify(body, null, 2);
         await putFile(SHELTER_INFO_PATH, contentStr, 'Update shelter settings', env, current.data?.sha);
