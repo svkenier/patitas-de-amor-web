@@ -54,7 +54,8 @@ export default function PetsPage() {
     queryKey: ['pets-index'],
     queryFn: async () => {
       const res = await get<BaseRecord[] | { records: BaseRecord[] }>(`/public/pets?t=${Date.now()}`);
-      const records = Array.isArray(res) ? res : (res?.records ?? []);
+      let records = Array.isArray(res) ? res : (res?.records ?? []);
+      records = records.filter(p => p.status !== 'oculto' && p.attributes?.is_active !== false);
       return { 
         records, 
         total: records.length 
@@ -124,11 +125,14 @@ export default function PetsPage() {
             <Typography variant="overline" color="primary" fontWeight={700} letterSpacing="0.12em">
               Nuestros Rescatados
             </Typography>
-            <Typography variant="h2" fontWeight={700} mt={0.5} mb={1}>
+            <Typography component="h1" variant="h2" fontWeight={700} mt={0.5} mb={1}>
               Mascotas en Adopción
             </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mb: 2 }}>
+              Descubre a nuestros animales rescatados que buscan una segunda oportunidad. Fomentamos la adopción responsable para brindarles el hogar lleno de amor que merecen.
+            </Typography>
             {data && (
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body2" color="primary" fontWeight={600}>
                 {data.total} registro{data.total !== 1 ? 's' : ''} disponibles
               </Typography>
             )}
@@ -324,20 +328,36 @@ export default function PetsPage() {
           {!isLoading && !isError && deferredFiltered.length === 0 && (
             <Box sx={{ textAlign: 'center', py: 10 }}>
               <ViewModuleIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                {hasActiveFilters
-                  ? 'Sin resultados con esos filtros'
-                  : 'No hay mascotas disponibles para adopción en este momento. ¡Vuelve pronto!'}
-              </Typography>
-              <Typography variant="body2" color="text.disabled" mb={3}>
-                {hasActiveFilters
-                  ? 'Prueba combinaciones diferentes o limpia los filtros.'
-                  : 'Vuelve pronto.'}
-              </Typography>
-              {hasActiveFilters && (
-                <Button variant="outlined" color="primary" onClick={clearFilters}>
-                  Limpiar filtros
-                </Button>
+              
+              {hasActiveFilters ? (
+                <>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Sin resultados con esos filtros
+                  </Typography>
+                  <Typography variant="body2" color="text.disabled" mb={3}>
+                    Prueba combinaciones diferentes o limpia los filtros.
+                  </Typography>
+                  <Button variant="outlined" color="primary" onClick={clearFilters}>
+                    Limpiar filtros
+                  </Button>
+                </>
+              ) : (
+                <Box sx={{ maxWidth: 600, mx: 'auto', bgcolor: 'background.paper', p: 4, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                  <Typography component="h2" variant="h5" fontWeight={700} gutterBottom>
+                    ¡Nuestros peludos están en buenas manos!
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" mb={4}>
+                    Actualmente todos nuestros rescatados están en proceso de adopción o recibiendo atención veterinaria. ¡Muy pronto publicaremos nuevos compañeros listos para encontrar una familia!
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    href="/requisitos"
+                    sx={{ borderRadius: 8, px: 4, py: 1.5, fontWeight: 700 }}
+                  >
+                    Conoce los requisitos de adopción mientras tanto
+                  </Button>
+                </Box>
               )}
             </Box>
           )}
