@@ -77,18 +77,7 @@ async function handleLogin(request: Request, env: Env) {
       await updateUserPreservingTTL(usernameClean, { password_hash: newHash }, env);
     }
 
-    console.log('[Auth Debug]', {
-      requestedUser: usernameClean,
-      foundInRedis: !!user,
-      hasHash: !!user?.password_hash,
-      isValid: valid,
-      adminUserMatch: env.ADMIN_USER ? usernameClean === env.ADMIN_USER.toLowerCase() : false,
-      adminPasswordMatch: env.ADMIN_PASSWORD ? password === env.ADMIN_PASSWORD : false,
-      envAdminUser: env.ADMIN_USER,
-      envAdminPass: env.ADMIN_PASSWORD,
-      pwdLength: password.length,
-      envPwdLength: env.ADMIN_PASSWORD?.length
-    });
+    // Debugging sensitive logs removed for security
 
     if (!user || !valid) {
       return new Response(JSON.stringify({ error: 'Usuario o contraseña incorrectos' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
