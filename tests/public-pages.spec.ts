@@ -20,24 +20,18 @@ test.describe('Páginas Públicas y Navegación', () => {
 
     await page.goto('/');
     
-    // Verificar que no hay errores HTTP ni errores en consola no controlados
     expect(errors.length).toBe(0);
 
-    // Verificar el título y el Hero
     await expect(page).toHaveTitle(TEST_CONFIG.siteTitlePattern);
     await expect(page.locator('h1')).toHaveText(TEST_CONFIG.heroHeadlinePattern);
 
-    // Verificar que los botones directos cargan
     const viewPetsBtn = page.getByRole('link').first();
     await expect(viewPetsBtn).toBeVisible({ timeout: 10000 });
 
-    // Comprobar que las imágenes cargan correctamente (código HTTP 200 implícito al no estar rotas)
-    // Verificaremos una de las imágenes principales si existen
     const images = await page.locator('img').all();
     for (const img of images) {
       const isVisible = await img.isVisible();
       if (isVisible) {
-        // Verificar usando evaluación de JS que el naturalWidth > 0
         const naturalWidth = await img.evaluate((el: HTMLImageElement) => el.naturalWidth);
         expect(naturalWidth).toBeGreaterThan(0);
       }
@@ -48,12 +42,48 @@ test.describe('Páginas Públicas y Navegación', () => {
     await page.goto('/mascotas');
     await expect(page).toHaveTitle(TEST_CONFIG.siteTitlePattern);
 
-    // Esperar a que la carga termine (esperar que desaparezca el Skeleton o aparezca texto)
-    // Buscamos algo que confirme que la página terminó de cargar
     const petButton = page.getByRole('link', { name: /Ver/i }).first();
-    const emptyState = page.getByText(/No hay/i).first();
+    const emptyState = page.getByText(/¡Nuestros peludos están en buenas manos!/i).first();
 
     await expect(petButton.or(emptyState)).toBeAttached({ timeout: 10000 });
+  });
+
+  const legalPages = [
+    { url: '/requisitos', title: TEST_CONFIG.siteTitlePattern, heading: /Requisitos/i },
+    { url: '/terminos', title: TEST_CONFIG.siteTitlePattern, heading: /Términos/i },
+    { url: '/privacidad', title: TEST_CONFIG.siteTitlePattern, heading: /Privacidad/i }
+  ];
+
+  for (const { url, title, heading } of legalPages) {
+    test(`La página ${url} carga correctamente sin errores 404/500`, async ({ page }) => {
+      const response = await page.goto(url);
+      
+      expect(response).not.toBeNull();
+      expect(response?.status()).toBe(200);
+
+      await expect(page).toHaveTitle(title);
+      await expect(page.locator('h1, h2').filter({ hasText: heading }).first()).toBeVisible();
+      
+      const mainContent = page.locator('main').or(page.locator('.MuiContainer-root')).first();
+      await expect(mainContent).toBeVisible();
+    });
+  }
+
+  test('Renderiza componente NotFound al visitar una ruta inexistente', async ({ page }) => {
+    const randomRoute = `/ruta-inexistente-${Date.now()}`;
+    await page.goto(randomRoute);
+
+    await expect(page).toHaveTitle(/Página no encontrada/i);
+
+    await expect(page.locator('h1')).toHaveText('404');
+    await expect(page.locator('text=¡Ups! Nos hemos perdido')).toBeVisible();
+
+    const homeBtn = page.getByRole('link', { name: /Volver al inicio/i });
+    await expect(homeBtn).toBeVisible();
+    await homeBtn.click();
+
+    await expect(page).toHaveURL(/.*localhost.*|.*127\.0\.0\.1.*/);
+    await expect(page.locator('h1')).toHaveText(TEST_CONFIG.heroHeadlinePattern);
   });
 
 });

@@ -328,12 +328,12 @@ export default function AnnouncementsManager() {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Editar">
-                        <IconButton aria-label="Acción" size="small" color="primary" onClick={() => handleOpenForm(a)}>
+                        <IconButton aria-label="Editar" size="small" color="primary" onClick={() => handleOpenForm(a)}>
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Eliminar">
-                        <IconButton aria-label="Acción" size="small" color="error" onClick={() => setDeleting(a)}>
+                        <IconButton aria-label="Eliminar" size="small" color="error" onClick={() => setDeleting(a)}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>

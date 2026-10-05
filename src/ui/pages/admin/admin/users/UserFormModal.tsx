@@ -59,7 +59,7 @@ export function UserFormModal({ open, actorRole, onClose, onCreated }: UserFormM
   });
 
   const mutation = useMutation({
-    mutationFn: () => post('/users/create', formik.values),
+    mutationFn: () => post('/users/create', { ...formik.values, password: formik.values.password.trim() }),
     onSuccess:  () => { onCreated(); onClose(); formik.resetForm(); },
     onError:    (e: unknown) => setError(formatApiError(e, 'Error al crear usuario')),
   });

@@ -47,6 +47,13 @@ interface PetFormProps {
   onSuccess?: (isEdit: boolean) => void;
 }
 
+/** Convierte el texto del input de peso a número; vacío o inválido → undefined. */
+const toWeight = (v: unknown): number | undefined => {
+  if (v === '' || v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+};
+
 const EMPTY = {
   title: '', especie: '', raza: '', sexo: '',
   tamano: '', edad_aproximada: '', peso_kg: '',
@@ -55,7 +62,7 @@ const EMPTY = {
 };
 
 const validationSchema = Yup.object({
-  title: Yup.string().required('El título/nombre es obligatorio'),
+  title: Yup.string().trim().required('El título/nombre es obligatorio'),
   especie: Yup.string(),
   sexo: Yup.string(),
   raza: Yup.string(),
@@ -224,6 +231,7 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
     enableReinitialize: true,
     validationSchema,
     onSubmit: () => {
+      if (isEdit && !hasChanges) return;
       mutation.mutate();
     },
   });
@@ -275,7 +283,7 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
     mutationFn: () => {
       const payload = {
         ...(isEdit && initial?.id ? { id: initial.id } : {}),
-        title: formik.values.title,
+        title: formik.values.title.trim(),
         description: formik.values.description,
         status: formik.values.status,
         attributes: {
@@ -284,7 +292,7 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
           sexo: formik.values.sexo,
           tamano: formik.values.tamano,
           edad_aproximada: formik.values.edad_aproximada,
-          peso_kg: formik.values.peso_kg ? parseFloat(formik.values.peso_kg as string) : undefined,
+          peso_kg: toWeight(formik.values.peso_kg),
           is_active: initial?.attributes?.['is_active'] !== undefined ? Boolean(initial.attributes['is_active']) : true,
           destacado: formik.values.destacado,
           vacunado: formik.values.vacunado,
@@ -435,7 +443,12 @@ export default function PetForm({ open, onClose, initial, collectionName = 'pets
               name="peso_kg"
               value={formik.values.peso_kg}
               onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
+              onBlur={(e) => {
+                formik.handleBlur(e);
+                // Normaliza el formato ("2.0" → "2") para no generar un falso cambio frente al valor original
+                const w = toWeight(e.target.value);
+                if (w !== undefined && String(w) !== e.target.value) void formik.setFieldValue('peso_kg', String(w));
+              }}
               error={formik.touched.peso_kg && Boolean(formik.errors.peso_kg)}
               helperText={formik.touched.peso_kg && (formik.errors.peso_kg as string)}
               fullWidth size="small"

@@ -57,7 +57,7 @@ export default function ChangePasswordDialog({ open, onClose }: ChangePasswordDi
   });
 
   const mutation = useMutation({
-    mutationFn: () => post('/users/change-password', { current_password: formik.values.currentPassword, new_password: formik.values.newPassword }),
+    mutationFn: () => post('/users/change-password', { current_password: formik.values.currentPassword.trim(), new_password: formik.values.newPassword.trim() }),
     onSuccess: () => {
       setSuccess(true);
       formik.resetForm();

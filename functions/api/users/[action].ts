@@ -1,6 +1,6 @@
 import { getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
 import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL } from '../../../src/core/auth/kv.js';
-import { hashPassword } from '../../../src/core/auth/crypto.js';
+import { hashPassword, verifyPassword } from '../../../src/core/auth/crypto.js';
 import { canManage, canCreateRole, type CreateUserRequest, type ResetPasswordRequest, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
 
 export async function onRequest(context: any) {
@@ -42,14 +42,14 @@ export async function onRequest(context: any) {
         return new Response(JSON.stringify({ error: 'Forbidden: Insufficient role to create this user' }), { status: 403 });
       }
 
-      const existing = await getUser(body.username, env);
+      const existing = await getUser(body.username.trim().toLowerCase(), env);
       if (existing) {
         return new Response(JSON.stringify({ error: 'User already exists' }), { status: 409 });
       }
 
-      const hashed = await hashPassword(body.password);
+      const hashed = await hashPassword(body.password.trim());
       await setUser({
-        username: body.username,
+        username: body.username.trim().toLowerCase(),
         password_hash: hashed,
         role: body.role as UserRole,
         created_by: payload.sub,
@@ -127,7 +127,7 @@ export async function onRequest(context: any) {
       const updates: any = {};
       if (body.role) updates.role = body.role;
       if (body.password) {
-        updates.password_hash = await hashPassword(body.password);
+        updates.password_hash = await hashPassword(body.password.trim());
         updates.tokenVersion = (target.tokenVersion || 1) + 1;
       }
 
@@ -151,7 +151,7 @@ export async function onRequest(context: any) {
         }
       }
 
-      const hashed = await hashPassword(body.new_password);
+      const hashed = await hashPassword(body.new_password.trim());
       await updateUserPreservingTTL(body.target_username, { password_hash: hashed, tokenVersion: (target.tokenVersion || 1) + 1 }, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
@@ -169,6 +169,21 @@ export async function onRequest(context: any) {
 
       await updateUserPreservingTTL(body.username, { tokenVersion: (target.tokenVersion || 1) + 1 }, env);
       await activateTTL(body.username, env);
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (request.method === 'POST' && action === 'change-password') {
+      const body = await request.json() as { current_password?: string; new_password?: string };
+      if (!body.current_password || !body.new_password) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+
+      const target = await getUser(payload.sub, env);
+      if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
+
+      const valid = target.password_hash ? await verifyPassword(body.current_password.trim(), target.password_hash) : false;
+      if (!valid) return new Response(JSON.stringify({ error: 'Contraseña actual incorrecta' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+
+      const hashed = await hashPassword(body.new_password.trim());
+      await updateUserPreservingTTL(payload.sub, { password_hash: hashed, tokenVersion: (target.tokenVersion || 1) + 1 }, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 

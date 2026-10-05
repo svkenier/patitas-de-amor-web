@@ -66,7 +66,7 @@ const EMPTY = {
 };
 
 const validationSchema = Yup.object({
-  title: Yup.string().required('El título es obligatorio'),
+  title: Yup.string().trim().required('El título es obligatorio'),
   type: Yup.string().required('El tipo es obligatorio'),
   description: Yup.string(),
   date: Yup.string().when('type', {
@@ -87,9 +87,9 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
   const formik = useFormik({
     initialValues: initial
       ? {
-          title:       initial.title,
-          type:        initial.type,
-          description: initial.description,
+          title:       initial.title ?? '',
+          type:        initial.type ?? '',
+          description: initial.description ?? '',
           date:        (initial.attributes?.date as string) ?? '',
           time:        (initial.attributes?.time as string) ?? '',
           location:    (initial.attributes?.location as string) ?? '',
@@ -98,6 +98,7 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
     enableReinitialize: true,
     validationSchema,
     onSubmit: () => {
+      if (isEdit && !hasChanges) return;
       mutation.mutate();
     },
   });
@@ -147,33 +148,24 @@ export default function AnnouncementForm({ open, onClose, initial }: Announcemen
         formik.values.location ? `en ${formik.values.location}` : '',
         formik.values.date ? `(${formik.values.date})` : ''
       ].filter(Boolean).join(' ');
+      // Atributos construidos una sola vez; las dimensiones de imagen solo se añaden si hay imagen nueva.
+      const attributes: Record<string, unknown> = {
+        ...(isEdit ? initial?.attributes : {}),
+        alt_text: autoAltText,
+        date: formik.values.date,
+        time: formik.values.time,
+        location: formik.values.location,
+        is_active: currentActive,
+        ...(base64 ? { image_width: imgWidth, image_height: imgHeight } : {}),
+      };
       const payload = {
         ...(isEdit && initial?.id ? { id: initial.id } : {}),
-        title: formik.values.title,
+        title: formik.values.title.trim(),
         type: formik.values.type,
         description: formik.values.description,
         status: initial?.status ?? 'active',
-        attributes: {
-          ...((isEdit ? initial?.attributes : {}) as any),
-          alt_text: autoAltText,
-          date: formik.values.date,
-          time: formik.values.time,
-          location: formik.values.location,
-          is_active: currentActive,
-        },
-        ...(base64 ? { 
-          main_image_base64: base64,
-          attributes: {
-            ...((isEdit ? initial?.attributes : {}) as any),
-            alt_text: autoAltText,
-            date: formik.values.date,
-            time: formik.values.time,
-            location: formik.values.location,
-            is_active: currentActive,
-            image_width: imgWidth,
-            image_height: imgHeight,
-          }
-        } : {}),
+        attributes,
+        ...(base64 ? { main_image_base64: base64 } : {}),
         ...(isEdit ? { 
           main_image: preview ? initial?.main_image : '',
           main_image_url: preview ? initial?.main_image : ''

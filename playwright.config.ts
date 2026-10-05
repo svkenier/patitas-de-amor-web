@@ -18,6 +18,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.dev.vars') });
  */
 export default defineConfig({
   testDir: './tests',
+  testMatch: '**/*.spec.ts',
   /* Ejecutar tests en paralelo */
   fullyParallel: true,
   /* Fallar la compilación en CI si se dejó algún test.only en el código */

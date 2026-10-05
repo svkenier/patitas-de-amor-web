@@ -83,14 +83,14 @@ export function UserTable({
     }
     
     if (isMainOwner) {
-      return { canReset: true, canDelete: true, canForceLogout: currentUser.role === 'owner', disabled: false, disabledReason: '' };
+      return { canReset: true, canDelete: true, canForceLogout: currentUser.role === 'owner' || currentUser.role === 'superadmin', disabled: false, disabledReason: '' };
     }
     
     const hasPermission = canManage(currentUser.role, target.role);
     return { 
       canReset: hasPermission, 
       canDelete: hasPermission, 
-      canForceLogout: currentUser.role === 'owner',
+      canForceLogout: currentUser.role === 'owner' || currentUser.role === 'superadmin',
       disabled: false, 
       disabledReason: '' 
     };

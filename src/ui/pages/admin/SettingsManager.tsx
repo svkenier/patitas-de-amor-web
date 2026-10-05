@@ -1,71 +1,203 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { ChangeEvent, ClipboardEvent, FocusEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useFormik } from 'formik';
+import { useFormik, getIn } from 'formik';
 import * as Yup from 'yup';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import SaveIcon from '@mui/icons-material/Save';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid2';
-import { get, put, formatApiError } from '@core/api/client';
+import { get, put, formatApiError, clearEtagCache } from '@core/api/client';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
 import type { Settings } from '@core/types/settings';
+import {
+  LIMITS,
+  PHONE_CHARS_REGEX,
+  WHATSAPP_REGEX,
+  EMAIL_REGEX,
+  digitsOnly,
+  isHttpsUrl,
+  isShelterPayloadUnchanged,
+  normalizeUrl,
+  toShelterPayload,
+} from '@core/settings/settingsRules';
+
+interface ShelterFormValues {
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address: string;
+  map_url: string;
+  social_links: { instagram: string; facebook: string; twitter: string };
+}
+
+interface SaveResponse {
+  ok: boolean;
+  unchanged?: boolean;
+  data?: Settings;
+}
+
+/** Valores iniciales del formulario: solo claves del refugio, sin `undefined`. */
+const buildFormValues = (s?: Partial<Settings>): ShelterFormValues => ({
+  phone: s?.phone ?? '',
+  whatsapp: s?.whatsapp ?? '',
+  email: s?.email ?? '',
+  address: s?.address ?? '',
+  map_url: s?.map_url ?? '',
+  social_links: {
+    instagram: s?.social_links?.instagram ?? '',
+    facebook: s?.social_links?.facebook ?? '',
+    twitter: s?.social_links?.twitter ?? '',
+  },
+});
+
+const urlField = Yup.string()
+  .trim()
+  .max(LIMITS.urlMax, `Máximo ${LIMITS.urlMax} caracteres`)
+  .test('https-url', 'Ingresa un enlace válido (https://...)', (v) => !v || isHttpsUrl(normalizeUrl(v)));
 
 const validationSchema = Yup.object({
-  phone: Yup.string().required('El teléfono es obligatorio'),
-  whatsapp: Yup.string().matches(/^\d+$/, 'Solo números, sin espacios ni símbolos').required('El WhatsApp es obligatorio'),
-  email: Yup.string().email('Debe ser un correo válido').required('El correo es obligatorio'),
-  map_url: Yup.string().url('Debe ser una URL válida'),
-  address: Yup.string().required('La dirección es obligatoria'),
+  phone: Yup.string()
+    .trim()
+    .required('El teléfono es obligatorio')
+    .matches(PHONE_CHARS_REGEX, 'Solo números, espacios, guiones y paréntesis')
+    .test(
+      'phone-digits',
+      `Debe tener entre ${LIMITS.phoneDigitsMin} y ${LIMITS.phoneDigitsMax} dígitos`,
+      (v) => {
+        const n = digitsOnly(v).length;
+        return n >= LIMITS.phoneDigitsMin && n <= LIMITS.phoneDigitsMax;
+      },
+    ),
+  whatsapp: Yup.string()
+    .trim()
+    .required('El WhatsApp es obligatorio')
+    .matches(WHATSAPP_REGEX, 'Incluye el código de país, sin "+", espacios ni 0 inicial (10 a 15 dígitos). Ej. 584120000000'),
+  email: Yup.string()
+    .trim()
+    .required('El correo es obligatorio')
+    .max(LIMITS.emailMax, `Máximo ${LIMITS.emailMax} caracteres`)
+    .matches(EMAIL_REGEX, 'Ingresa un correo válido (ej. nombre@dominio.com)'),
+  address: Yup.string()
+    .trim()
+    .required('La dirección es obligatoria')
+    .min(LIMITS.addressMin, `Mínimo ${LIMITS.addressMin} caracteres`)
+    .max(LIMITS.addressMax, `Máximo ${LIMITS.addressMax} caracteres`),
+  map_url: urlField,
   social_links: Yup.object({
-    instagram: Yup.string().url('Debe ser una URL válida').nullable(),
-    facebook: Yup.string().url('Debe ser una URL válida').nullable(),
-    twitter: Yup.string().url('Debe ser una URL válida').nullable(),
+    instagram: urlField,
+    facebook: urlField,
+    twitter: urlField,
   }),
-  domainExpirationDate: Yup.string().nullable(),
-  domainAlertEnabled: Yup.boolean().nullable(),
 });
 
 export default function SettingsManager() {
   const qc = useQueryClient();
   const [successMsg, setSuccessMsg] = useState('');
 
-  const { data, isLoading, isError } = useQuery<Settings>({
+  const flashSuccess = (msg: string) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const { data, isLoading, isError, error: loadError } = useQuery<Settings>({
     queryKey: ['settings'],
     queryFn: async () => {
       const res = await get<Settings | {}>('/settings');
       if (Object.keys(res).length === 0) return DEFAULT_SETTINGS;
       return { ...DEFAULT_SETTINGS, ...res } as Settings;
     },
-    initialData: DEFAULT_SETTINGS,
   });
+
   const mutation = useMutation({
-    mutationFn: (newSettings: Settings) => put('/settings', newSettings),
-    onSuccess: () => {
-      setSuccessMsg('Configuración guardada exitosamente.');
-      setTimeout(() => setSuccessMsg(''), 3000);
+    // Payload parcial: SOLO claves del refugio. Las de dominio nunca se reenvían desde aquí.
+    mutationFn: (payload: Record<string, unknown>) => put<SaveResponse>('/settings', payload),
+    onSuccess: (res) => {
+      clearEtagCache('/settings');
+      if (res?.data) qc.setQueryData(['settings'], { ...DEFAULT_SETTINGS, ...res.data });
+      flashSuccess(res?.unchanged ? 'No había cambios que guardar.' : 'Configuración guardada exitosamente.');
       void qc.invalidateQueries({ queryKey: ['settings'] });
     },
   });
 
-  const formik = useFormik({
-    initialValues: data || DEFAULT_SETTINGS,
+  const initialValues = useMemo(() => buildFormValues(data), [data]);
+
+  const formik = useFormik<ShelterFormValues>({
+    initialValues,
     enableReinitialize: true,
     validationSchema,
-    onSubmit: (values) => {
-      mutation.mutate(values);
+    onSubmit: async (values) => {
+      const payload = toShelterPayload(values as unknown as Record<string, unknown>);
+      // Guardia: si lo limpio es idéntico a lo guardado, no se llama al backend (evita commits vacíos).
+      if (data && isShelterPayloadUnchanged(payload, data as unknown as Record<string, unknown>)) {
+        flashSuccess('No hay cambios que guardar.');
+        formik.resetForm({ values: buildFormValues(data) });
+        return;
+      }
+      try {
+        await mutation.mutateAsync(payload);
+      } catch {
+        // El error se muestra mediante `mutation.isError`.
+      }
     },
   });
 
+  if (isLoading || !data) return <CircularProgress />;
+  if (isError) return <Alert severity="error">{formatApiError(loadError, 'Error al cargar la configuración.')}</Alert>;
 
-  if (isLoading) return <CircularProgress />;
-  if (isError) return <Alert severity="error">{formatApiError(mutation.error, 'Error al cargar la configuración.')}</Alert>;
+  /** Props comunes de un campo, con soporte de rutas anidadas (`social_links.instagram`). */
+  const fieldProps = (name: string, helper?: string) => {
+    const err = getIn(formik.touched, name) ? (getIn(formik.errors, name) as string | undefined) : undefined;
+    return {
+      name,
+      fullWidth: true,
+      value: (getIn(formik.values, name) as string | undefined) ?? '',
+      onChange: formik.handleChange,
+      onBlur: formik.handleBlur,
+      error: Boolean(err),
+      helperText: err || helper,
+    };
+  };
+
+  /** onBlur que además autocompleta `https://` en enlaces. */
+  const urlBlur = (name: string) => (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    formik.handleBlur(e);
+    const normalized = normalizeUrl(e.target.value);
+    if (normalized !== e.target.value) void formik.setFieldValue(name, normalized);
+  };
+
+  const handleWhatsappChange = (e: ChangeEvent<HTMLInputElement>) => {
+    void formik.setFieldValue('whatsapp', digitsOnly(e.target.value).slice(0, 15));
+  };
+
+  // maxLength truncaría un texto pegado con símbolos ("+58 (412) 000-0000") ANTES de limpiarlo,
+  // por eso el pegado se intercepta y se sanitiza primero.
+  const handleWhatsappPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const el = e.currentTarget;
+    const pasted = digitsOnly(e.clipboardData.getData('text'));
+    const cur = el.value;
+    const merged = cur.slice(0, el.selectionStart ?? cur.length) + pasted + cur.slice(el.selectionEnd ?? cur.length);
+    void formik.setFieldValue('whatsapp', digitsOnly(merged).slice(0, 15));
+  };
+
+  const handleEmailBlur = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    formik.handleBlur(e);
+    const cleaned = e.target.value.trim().toLowerCase();
+    if (cleaned !== e.target.value) void formik.setFieldValue('email', cleaned);
+  };
+
+  const noChanges = !formik.dirty;
+  const isSaveDisabled = noChanges || mutation.isPending || formik.isSubmitting;
+  const isSaving = mutation.isPending || formik.isSubmitting;
 
   return (
-    <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 800 }}>
+    <Box component="form" onSubmit={formik.handleSubmit} noValidate sx={{ maxWidth: 800 }}>
       <Typography variant="h6" fontWeight={700} gutterBottom>
         Configuración General
       </Typography>
@@ -79,65 +211,44 @@ export default function SettingsManager() {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
-            fullWidth
+            {...fieldProps('phone', 'Formato legible. Ej. +58 412 000 0000')}
             label="Teléfono de Contacto *"
-            name="phone"
-            value={formik.values.phone}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.phone && Boolean(formik.errors.phone)}
-            helperText={(formik.touched.phone && (formik.errors.phone as string)) || "Ej. +58 412 000 0000"}
+            type="tel"
+            inputProps={{ inputMode: 'tel', autoComplete: 'tel', maxLength: 30 }}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
-            fullWidth
+            {...fieldProps('whatsapp', "Código de país + número, sin '+' ni espacios. Ej. 584120000000")}
             label="WhatsApp (Sólo números) *"
-            name="whatsapp"
-            value={formik.values.whatsapp}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.whatsapp && Boolean(formik.errors.whatsapp)}
-            helperText={(formik.touched.whatsapp && (formik.errors.whatsapp as string)) || "Sin espacios ni '+'. Ej. 584120000000"}
+            onChange={handleWhatsappChange}
+            inputProps={{ inputMode: 'numeric', maxLength: 15, onPaste: handleWhatsappPaste }}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
-            fullWidth
+            {...fieldProps('email')}
             label="Correo Electrónico *"
-            name="email"
             type="email"
-            value={formik.values.email}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.email && Boolean(formik.errors.email)}
-            helperText={formik.touched.email && (formik.errors.email as string)}
+            onBlur={handleEmailBlur}
+            inputProps={{ inputMode: 'email', autoComplete: 'email', maxLength: LIMITS.emailMax }}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
-            fullWidth
+            {...fieldProps('map_url', 'Enlace corto o directo a la ubicación (opcional)')}
             label="Enlace de Google Maps (URL)"
-            name="map_url"
-            value={formik.values.map_url || ''}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.map_url && Boolean(formik.errors.map_url)}
-            helperText={(formik.touched.map_url && (formik.errors.map_url as string)) || "Enlace corto o directo a la ubicación (opcional)"}
+            onBlur={urlBlur('map_url')}
+            placeholder="https://maps.app.goo.gl/..."
           />
         </Grid>
         <Grid size={{ xs: 12 }}>
           <TextField
-            fullWidth
+            {...fieldProps('address', `${formik.values.address.length}/${LIMITS.addressMax}`)}
             label="Dirección Física *"
-            name="address"
-            value={formik.values.address}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.address && Boolean(formik.errors.address)}
-            helperText={formik.touched.address && (formik.errors.address as string)}
             multiline
             rows={2}
+            inputProps={{ maxLength: LIMITS.addressMax }}
           />
         </Grid>
 
@@ -146,57 +257,47 @@ export default function SettingsManager() {
             Redes Sociales
           </Typography>
         </Grid>
-        
-        <Grid size={{ xs: 12, md: 4 }}>
-          <TextField
-            fullWidth
-            label="Instagram (URL)"
-            name="social_links.instagram"
-            value={formik.values.social_links?.instagram || ''}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={Boolean((formik.touched.social_links as any)?.instagram) && Boolean((formik.errors.social_links as any)?.instagram)}
-            helperText={(formik.touched.social_links as any)?.instagram && (formik.errors.social_links as any)?.instagram}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <TextField
-            fullWidth
-            label="Facebook (URL)"
-            name="social_links.facebook"
-            value={formik.values.social_links?.facebook || ''}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={Boolean((formik.touched.social_links as any)?.facebook) && Boolean((formik.errors.social_links as any)?.facebook)}
-            helperText={(formik.touched.social_links as any)?.facebook && (formik.errors.social_links as any)?.facebook}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <TextField
-            fullWidth
-            label="Twitter / X (URL)"
-            name="social_links.twitter"
-            value={formik.values.social_links?.twitter || ''}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={Boolean((formik.touched.social_links as any)?.twitter) && Boolean((formik.errors.social_links as any)?.twitter)}
-            helperText={(formik.touched.social_links as any)?.twitter && (formik.errors.social_links as any)?.twitter}
-          />
-        </Grid>
-        
 
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            {...fieldProps('social_links.instagram')}
+            label="Instagram (URL)"
+            onBlur={urlBlur('social_links.instagram')}
+            placeholder="https://instagram.com/tu_usuario"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            {...fieldProps('social_links.facebook')}
+            label="Facebook (URL)"
+            onBlur={urlBlur('social_links.facebook')}
+            placeholder="https://facebook.com/tu_pagina"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            {...fieldProps('social_links.twitter')}
+            label="Twitter / X (URL)"
+            onBlur={urlBlur('social_links.twitter')}
+            placeholder="https://x.com/tu_usuario"
+          />
+        </Grid>
       </Grid>
 
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button
-          type="submit"
-          variant="contained"
-          size="large"
-          startIcon={(mutation.isPending || formik.isSubmitting) ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-          disabled={mutation.isPending || formik.isSubmitting}
-        >
-          Guardar Configuración
-        </Button>
+        <Tooltip title={noChanges ? 'No hay cambios pendientes por guardar' : ''} arrow placement="top">
+          <span>
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              startIcon={isSaving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+              disabled={isSaveDisabled}
+            >
+              Guardar Configuración
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
     </Box>
   );

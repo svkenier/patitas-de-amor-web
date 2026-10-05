@@ -21,7 +21,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import Switch from '@mui/material/Switch';
 import Chip from '@mui/material/Chip';
-import { get, put, formatApiError } from '@core/api/client';
+import { get, put, formatApiError, clearEtagCache } from '@core/api/client';
 import type { Settings } from '@core/types/settings';
 import { DEFAULT_SETTINGS } from '@core/types/settings';
 import DomainAlert from '@ui/components/DomainAlert';
@@ -55,12 +55,15 @@ export default function DomainManager() {
       if (Object.keys(res).length === 0) return DEFAULT_SETTINGS;
       return { ...DEFAULT_SETTINGS, ...res } as Settings;
     },
-    initialData: DEFAULT_SETTINGS,
   });
 
   const mutation = useMutation({
-    mutationFn: (newSettings: Settings) => put('/settings', newSettings),
-    onSuccess: () => {
+    // Payload parcial: SOLO claves de dominio. Los datos del refugio nunca se reenvían desde aquí.
+    mutationFn: (patch: Pick<Settings, 'expirationDate' | 'domainExpirationDate' | 'monitoringActive' | 'domainAlertEnabled'>) =>
+      put<{ ok: boolean; unchanged?: boolean; data?: Settings }>('/settings', patch),
+    onSuccess: (res) => {
+      clearEtagCache('/settings');
+      if (res?.data) qc.setQueryData(['settings'], { ...DEFAULT_SETTINGS, ...res.data });
       setSuccessMsg('Configuración guardada exitosamente.');
       setConfirmOpen(false);
       setSuspendModalOpen(false);
@@ -106,7 +109,6 @@ export default function DomainManager() {
 
   const handleConfirm = () => {
     mutation.mutate({
-      ...currentSettings,
       expirationDate: serializeLocalDate(finalNewDateObj),
       domainExpirationDate: serializeLocalDate(finalNewDateObj)
     });
@@ -117,7 +119,6 @@ export default function DomainManager() {
       setSuspendModalOpen(true);
     } else {
       mutation.mutate({
-        ...currentSettings,
         monitoringActive: true,
         domainAlertEnabled: true
       });
@@ -126,7 +127,6 @@ export default function DomainManager() {
 
   const confirmSuspend = () => {
     mutation.mutate({
-      ...currentSettings,
       monitoringActive: false,
       domainAlertEnabled: false
     });

@@ -65,7 +65,7 @@ export default function Login() {
       setError('');
 
       try {
-        await login({ username: values.username.trim().toLowerCase(), password: values.password });
+        await login({ username: values.username.trim().toLowerCase(), password: values.password.trim() });
         navigate(from, { replace: true });
       } catch (err) {
         setError(formatApiError(err, 'No se pudo iniciar sesión. Credenciales no válidas.'));
@@ -122,7 +122,10 @@ export default function Login() {
                 type="text"
                 value={formik.values.username}
                 onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
+                onBlur={(e) => {
+                  formik.setFieldValue('username', e.target.value.trim().toLowerCase());
+                  formik.handleBlur(e);
+                }}
                 error={formik.touched.username && Boolean(formik.errors.username)}
                 helperText={formik.touched.username && formik.errors.username}
                 fullWidth
