@@ -33,3 +33,7 @@ dist-ssr
 /tests/playwright-report/
 /tests/test-results/
 docs/audits/*.json
+
+# Compiled js artifacts alongside ts files
+functions/**/*.js
+src/**/*.js
