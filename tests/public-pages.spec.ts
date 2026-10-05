@@ -9,7 +9,7 @@ test.describe('Páginas Públicas y Navegación', () => {
       await route.fulfill({ status: 200, json: {} });
     });
     
-    await page.route('**/api/public/pets', async route => {
+    await page.route('**/api/public/pets*', async route => {
       await route.fulfill({ status: 200, json: [] });
     });
   });
@@ -42,10 +42,13 @@ test.describe('Páginas Públicas y Navegación', () => {
     await page.goto('/mascotas');
     await expect(page).toHaveTitle(TEST_CONFIG.siteTitlePattern);
 
+    // Validar el Empty State y ausencia de soft 404
     const petButton = page.getByRole('link', { name: /Ver/i }).first();
     const emptyState = page.getByText(/¡Nuestros peludos están en buenas manos!/i).first();
 
     await expect(petButton.or(emptyState)).toBeAttached({ timeout: 10000 });
+    // Validar explícitamente que no se muestre un 404
+    await expect(page.getByText('404').first()).not.toBeVisible();
   });
 
   const legalPages = [
