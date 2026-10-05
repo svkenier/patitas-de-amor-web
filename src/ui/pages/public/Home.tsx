@@ -147,7 +147,7 @@ export default function Home() {
         component="section"
         sx={{
           position: 'relative',
-          minHeight: { xs: 'calc(100svh - 56px)', md: 'calc(100vh - 64px)' },
+          minHeight: { xs: 'calc(100dvh - 56px)', md: 'calc(100vh - 64px)' },
           display: 'flex',
           flexDirection: 'column',
           justifyContent: { xs: 'flex-start', md: 'center' },
@@ -194,7 +194,7 @@ export default function Home() {
             height="1200"
           />
         </Box>
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, pt: { xs: 4, sm: 6, md: 0 } }}>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, pt: { xs: 3, sm: 4, md: 0 } }}>
           <Box sx={{ maxWidth: { xs: '100%', md: '580px', lg: '650px' } }}>
             <AnimatedSection>
               <Box sx={{
@@ -238,11 +238,11 @@ export default function Home() {
                 component="h1"
                 fontWeight={800}
                 color="common.white"
-                mb={2.5}
+                mb={{ xs: 1.5, sm: 2, md: 2.5 }}
                 sx={{ 
                   textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                  fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem', lg: '3.25rem' },
-                  lineHeight: { xs: 1.25, md: 1.18 }
+                  fontSize: { xs: 'clamp(1.75rem, 6vw, 2.25rem)', sm: '2.25rem', md: '2.75rem', lg: '3.25rem' },
+                  lineHeight: { xs: 1.2, md: 1.18 }
                 }}
               >
                 Adopción de perros y gatos en Barquisimeto
@@ -252,11 +252,11 @@ export default function Home() {
             <AnimatedSection delay={160}>
               <Typography
                 variant="body1"
-                mb={4.5}
+                mb={{ xs: 3, sm: 4, md: 4.5 }}
                 sx={{
                   color: 'rgba(255, 255, 255, 0.9)',
-                  fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.15rem' },
-                  lineHeight: 1.6,
+                  fontSize: { xs: '0.9rem', sm: '1rem', md: '1.15rem' },
+                  lineHeight: { xs: 1.5, md: 1.6 },
                 }}
               >
                 Dale una segunda oportunidad a quien más lo necesita. En Patitas de Amor rescatamos y rehabilitamos peludos en situación de calle para conectar vidas con hogares llenos de amor.
