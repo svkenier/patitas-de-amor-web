@@ -61,7 +61,7 @@ export default function SEO({
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={finalUrl} />
-      {noindex && <meta name="robots" content="noindex, follow" />}
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
 
       {/* Geo-Metatags */}
       <meta name="geo.region" content="VE-K" />
