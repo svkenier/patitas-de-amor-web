@@ -19,7 +19,7 @@ export function useUserManagement() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (username: string) => del('/users/delete', { data: { target_username: username } }),
+    mutationFn: (username: string) => del('/users/delete', { data: { username } }),
     onSuccess:  () => {
       void qc.invalidateQueries({ queryKey: ['users-list'] });
       setDeleteTarget(null);
@@ -28,7 +28,7 @@ export function useUserManagement() {
   });
 
   const forceLogoutMutation = useMutation({
-    mutationFn: (username: string) => post('/users/force-logout', { target_username: username }),
+    mutationFn: (username: string) => post('/users/force-logout', { username }),
     onSuccess:  () => {
       setForceLogoutTarget(null);
     },

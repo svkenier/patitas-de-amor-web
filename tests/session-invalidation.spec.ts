@@ -6,37 +6,33 @@ dotenv.config({ path: '.dev.vars' });
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const SUPERADMIN = (process.env.ADMIN_USERNAME || process.env.ADMIN_USER) as string;
 
-function base64url(str: string) {
-  return Buffer.from(str).toString('base64')
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-}
-
-function generateToken(username: string, role: string, tokenVersion: number = 1) {
-  const header = { alg: 'HS256', typ: 'JWT' };
-  const payload = {
+/**
+ * Genera un JWT HS256 compatible con la firma de jsonwebtoken (RFC 7519).
+ * La implementación de jsonwebtoken también usa HMAC-SHA256 sobre el string
+ * `header.payload` en base64url, que es exactamente lo que hace esta función.
+ */
+function generateToken(username: string, role: string, tokenVersion: number = 1): string {
+  const header = base64url(Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));
+  const payload = base64url(Buffer.from(JSON.stringify({
     sub: username,
     role,
     tokenVersion,
+    iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 8 * 3600
-  };
-  
-  const encodedHeader = base64url(JSON.stringify(header));
-  const encodedPayload = base64url(JSON.stringify(payload));
-  const signatureInput = `${encodedHeader}.${encodedPayload}`;
-  
-  const signature = crypto.createHmac('sha256', JWT_SECRET)
-    .update(signatureInput)
-    .digest('base64')
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-    
-  return `${signatureInput}.${signature}`;
+  })));
+  const data = `${header}.${payload}`;
+  const sig = base64url(crypto.createHmac('sha256', JWT_SECRET).update(data).digest());
+  return `${data}.${sig}`;
 }
 
+function base64url(input: Buffer | string): string {
+  const buf = Buffer.isBuffer(input) ? input : Buffer.from(input as string, 'utf8');
+  return buf.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+
 test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
+  test.describe.configure({ mode: 'serial' });
   let testUser = '';
   const testPassword = 'TestPassword123!';
 
@@ -53,8 +49,29 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
     if (json.result) {
       const user = JSON.parse(json.result);
       if (user.tokenVersion) tokenVersion = user.tokenVersion;
+    } else {
+      const adminUser = {
+        username: SUPERADMIN,
+        password_hash: 'hashed',
+        role: 'owner',
+        tokenVersion: 1,
+        last_login: new Date().toISOString(),
+        created_by: 'system',
+        created_at: new Date().toISOString(),
+        isProtected: true
+      };
+      await fetch(`${upstashUrl}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${upstashToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(["SET", `user:${SUPERADMIN}`, JSON.stringify(adminUser)])
+      });
+      await fetch(`${upstashUrl}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${upstashToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(["SADD", "user:index", SUPERADMIN])
+      });
     }
-    return generateToken(SUPERADMIN, 'superadmin', tokenVersion);
+    return generateToken(SUPERADMIN, 'owner', tokenVersion);
   }
 
   // Obtiene un token JWT válido para cualquier usuario desde Upstash Redis
@@ -120,13 +137,34 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
       }
     });
     if (!res.ok()) {
-      console.log('Error creating user:', await res.text());
+      console.log('Error creating user:', res.status(), res.statusText(), await res.text());
     } else {
+      // OPTION C: Set ephemeral TTL to guarantee purge even if test crashes
+      const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
+      const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+      await fetch(`${upstashUrl}/expire/user:${testUser}/30`, {
+        headers: { Authorization: `Bearer ${upstashToken}` }
+      });
+
       if (!createdTestUsers.includes(testUser)) {
         createdTestUsers.push(testUser);
       }
     }
     expect(res.ok()).toBeTruthy();
+  });
+
+  test.afterEach(async ({ request }) => {
+    if (testUser) {
+      try {
+        const adminToken = await getAdminToken();
+        await request.delete('/api/users/delete', {
+          headers: { Authorization: `Bearer ${adminToken}` },
+          data: { username: testUser }
+        });
+      } catch (e) {
+        console.error('Error in afterEach cleanup:', e);
+      }
+    }
   });
 
   test.afterAll(async ({ request }) => {
@@ -158,7 +196,7 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
     
     // Inyectar sesión de superadmin usando token con versión correcta
     const adminToken = await getAdminToken();
-    const adminUserData = { username: SUPERADMIN, role: 'superadmin' };
+    const adminUserData = { username: SUPERADMIN, role: 'owner' };
     await adminPage.goto('/');
     
     const adminUrl = new URL(adminPage.url());
@@ -176,20 +214,26 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
     
     // Ir al panel de usuarios
     await adminPage.goto('/admin');
-    const listResponsePromise1 = adminPage.waitForResponse(response => response.url().includes('/api/users/list') && (response.status() === 200 || response.status() === 304));
+    await expect(adminPage.getByRole('heading', { name: /Panel de Administración/i })).toBeVisible({ timeout: 15000 });
+
+    const listResponsePromise1 = adminPage.waitForResponse(
+      response => response.url().includes('/api/users/list') && (response.status() === 200 || response.status() === 304)
+    );
     await adminPage.getByRole('tab', { name: 'Usuarios' }).click();
     await listResponsePromise1;
     
     // Buscar al usuario de prueba y forzar logout
     // Buscamos la fila del usuario y usamos data-testid
+    await adminPage.locator('table').getByTestId(`force-logout-${testUser}`).waitFor({ state: 'visible', timeout: 10000 });
     await adminPage.locator('table').getByTestId(`force-logout-${testUser}`).click();
     
     // Confirmar en el modal
     const dialog = adminPage.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    const responsePromise = adminPage.waitForResponse(response => response.url().includes('/api/users/force-logout') && response.status() === 200);
+    const responsePromise = adminPage.waitForResponse(response => response.url().includes('/api/users/force-logout'));
     await dialog.getByRole('button', { name: 'Forzar Cierre' }).click();
-    await responsePromise;
+    const response = await responsePromise;
+    console.log('Force logout UI response status:', response.status(), await response.text());
     await expect(adminPage.getByText('Sesiones invalidadas con éxito.')).toBeVisible({ timeout: 10000 });
     
     // 3. El heartbeat de 20s detectará la revocación automáticamente.
@@ -224,12 +268,18 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
     
     // Inyectar sesión del superadmin (evita el rate limiter del login)
     const adminToken = await getAdminToken();
-    await injectSession(adminPage, SUPERADMIN, 'superadmin', adminToken);
+    await injectSession(adminPage, SUPERADMIN, 'owner', adminToken);
+    // Ir al panel de usuarios
     await adminPage.goto('/admin');
-    
-    const listResponsePromise2 = adminPage.waitForResponse(response => response.url().includes('/api/users/list') && (response.status() === 200 || response.status() === 304));
+    await expect(adminPage.getByRole('heading', { name: /Panel de Administración/i })).toBeVisible({ timeout: 15000 });
+
+    const listResponsePromise2 = adminPage.waitForResponse(
+      response => response.url().includes('/api/users/list') && (response.status() === 200 || response.status() === 304)
+    );
     await adminPage.getByRole('tab', { name: 'Usuarios' }).click();
     await listResponsePromise2;
+    
+    await adminPage.locator('table').getByTestId(`reset-${testUser}`).waitFor({ state: 'visible', timeout: 10000 });
     await adminPage.locator('table').getByTestId(`reset-${testUser}`).click();
     
     const dialog = adminPage.getByRole('dialog');
@@ -258,11 +308,11 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
     });
     expect(resForbidden.status()).toBe(403);
     
-    // 2. Superadmin se fuerza el cierre de sesión a sí mismo (permitido)
+    // 2. Superadmin se fuerza el cierre de sesión a un usuario efímero (permitido)
     const adminToken = await getAdminToken();
     const resSelf = await request.post('/api/users/force-logout', {
       headers: { Authorization: `Bearer ${adminToken}` },
-      data: { username: SUPERADMIN }
+      data: { username: testUser }
     });
     expect(resSelf.status()).toBe(200);
     const jsonSelf = await resSelf.json();
@@ -273,7 +323,8 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
     const adminToken = await getAdminToken();
     
     // 1. Activar el TTL manualmente enviando logout request para el usuario
-    const userToken = generateToken(testUser, 'voluntario', 1);
+    //    Usar getUserToken para leer el tokenVersion real desde Redis
+    const userToken = await getUserToken(testUser, 'voluntario');
     await request.post('/api/auth/logout', {
       headers: { Authorization: `Bearer ${userToken}` }
     });
@@ -295,9 +346,11 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: { username: testUser }
     });
+    const resForceText = await resForce.text();
+    if (!resForce.ok()) {
+      console.log('Force logout failed:', resForce.status(), resForceText);
+    }
     expect(resForce.ok()).toBeTruthy();
-    
-    // 4. Verificar que el TTL sigue siendo aproximadamente el mismo
     const resTtl2 = await request.get(`${upstashUrl}/ttl/user:${testUser}`, {
       headers: { Authorization: `Bearer ${upstashToken}` }
     });

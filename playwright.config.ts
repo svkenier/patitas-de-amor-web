@@ -72,9 +72,9 @@ export default defineConfig({
 
   /* Ejecutar el servidor de desarrollo local antes de comenzar las pruebas */
   webServer: {
-    command: 'pnpm run preview',
+    command: 'pnpm run dev',
     url: process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120 * 1000,
   },
 });
