@@ -146,7 +146,8 @@ export interface CreateUserRequest {
 /** Payload para `POST /api/users/reset-password` (solo SuperAdmin). */
 export interface ResetPasswordRequest {
   /** Username del usuario al que se le resetea la contraseña. */
-  target_username: string;
+  username?: string;
+  target_username?: string;
   /** Nueva contraseña en texto plano (se hashea en el backend). */
   new_password: string;
 }

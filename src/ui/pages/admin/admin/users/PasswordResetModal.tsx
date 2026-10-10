@@ -47,7 +47,7 @@ export function PasswordResetModal({ target, onClose }: PasswordResetModalProps)
   });
 
   const mutation = useMutation({
-    mutationFn: () => post('/users/reset-password', { target_username: target?.username, new_password: formik.values.password.trim() }),
+    mutationFn: () => post('/users/reset-password', { username: target?.username, new_password: formik.values.password.trim() }),
     onSuccess:  () => setDone(true),
     onError:    (e: unknown) => setError(formatApiError(e, 'Error al resetear la contraseña')),
   });

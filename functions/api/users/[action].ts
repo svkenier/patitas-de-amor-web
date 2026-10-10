@@ -137,12 +137,13 @@ export async function onRequest(context: any) {
 
     if (request.method === 'POST' && action === 'reset-password') {
       const body = await request.json() as ResetPasswordRequest;
-      if (!body.target_username || !body.new_password) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      const targetUser = body.username || body.target_username;
+      if (!targetUser || !body.new_password) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
 
-      const target = await getUser(body.target_username, env);
+      const target = await getUser(targetUser, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
-      if (body.target_username !== payload.sub) {
+      if (targetUser !== payload.sub) {
         if (target.role === 'owner') {
           return new Response(JSON.stringify({ error: 'Acceso denegado: la cuenta del propietario es inviolable.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
@@ -152,7 +153,7 @@ export async function onRequest(context: any) {
       }
 
       const hashed = await hashPassword(body.new_password.trim());
-      await updateUserPreservingTTL(body.target_username, { password_hash: hashed, tokenVersion: (target.tokenVersion || 1) + 1 }, env);
+      await updateUserPreservingTTL(targetUser, { password_hash: hashed, tokenVersion: (target.tokenVersion || 1) + 1 }, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
     
