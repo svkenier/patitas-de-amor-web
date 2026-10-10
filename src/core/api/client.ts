@@ -149,22 +149,67 @@ export const extractApiError = (error: unknown): string => {
   return 'Error inesperado';
 };
 
+const ERROR_DICTIONARY: Record<string, string> = {
+  'Unauthorized': 'La sesión ha expirado o no es válida.',
+  'Forbidden': 'No tienes los permisos necesarios para realizar esta acción.',
+  'Forbidden: Insufficient role': 'No tienes los permisos necesarios para realizar esta acción.',
+  'Forbidden: Insufficient role to create this user': 'Tu nivel de acceso no permite crear usuarios con este rol.',
+  'Forbidden: Cannot delete a protected user': 'No es posible eliminar a un usuario protegido o de sistema.',
+  'Forbidden: Cannot downgrade a protected user': 'No es posible reducir los privilegios de este usuario protegido.',
+  'User already exists': 'Este nombre de usuario ya se encuentra registrado.',
+  'Bad Request': 'La información enviada está incompleta o es incorrecta.',
+  'Not Found': 'El registro o usuario solicitado ya no existe.',
+  'Internal Server Error': 'Ocurrió un problema en el servidor. Intenta nuevamente más tarde.',
+  'Network Error': 'Error de conexión con el servidor.',
+};
+
+const HTTP_STATUS_FALLBACK: Record<number, string> = {
+  400: 'La información enviada es incorrecta o está incompleta.',
+  401: 'La sesión ha expirado o no tienes acceso.',
+  403: 'No tienes permisos para realizar esta acción.',
+  404: 'El recurso solicitado no fue encontrado.',
+  409: 'Existe un conflicto con los datos ingresados.',
+  429: 'Demasiados intentos. Intenta más tarde.',
+  500: 'Ocurrió un error inesperado en el servidor.',
+};
+
+const isSpanishMessage = (msg: string): boolean => {
+  const spanishChars = /[áéíóúñ¿¡]/i;
+  const spanishWords = /\b(el|la|los|las|un|una|unos|unas|de|del|que|en|por|para|con|sin|como|pero|o|y|no|si|usuario|contraseña|acceso|denegado|incorrecto|incorrecta|intentos|error)\b/i;
+  return spanishChars.test(msg) || spanishWords.test(msg);
+};
+
 /**
- * Formatea un error para mostrar al usuario, concatenando el mensaje descriptivo
- * con el error técnico real (ej: "No se pudo iniciar sesión. (\"Request failed with status code 401\")").
+ * Formatea un error para mostrar al usuario, traduciendo mensajes crudos de la API
+ * y manteniendo los códigos HTTP para trazabilidad.
  */
 export const formatApiError = (error: unknown, fallbackMessage: string): string => {
-  let technicalMsg = '';
   if (axios.isAxiosError<ApiError>(error)) {
     const status = error.response?.status;
-    const axiosMsg = error.response?.data?.message || error.response?.data?.error || error.message;
-    technicalMsg = status ? `${axiosMsg} - ${status}` : axiosMsg;
-  } else if (error instanceof Error) {
-    technicalMsg = error.message;
-  } else {
-    technicalMsg = String(error);
+    const axiosMsg = error.response?.data?.message || error.response?.data?.error || error.message || '';
+    
+    let friendlyMessage = fallbackMessage;
+
+    if (ERROR_DICTIONARY[axiosMsg]) {
+      friendlyMessage = ERROR_DICTIONARY[axiosMsg];
+    } else if (axiosMsg.startsWith('Request failed with status code')) {
+      friendlyMessage = status && HTTP_STATUS_FALLBACK[status] ? HTTP_STATUS_FALLBACK[status] : fallbackMessage;
+    } else if (isSpanishMessage(axiosMsg)) {
+      friendlyMessage = axiosMsg;
+    } else if (status && HTTP_STATUS_FALLBACK[status]) {
+      friendlyMessage = HTTP_STATUS_FALLBACK[status];
+    } else {
+      friendlyMessage = fallbackMessage;
+    }
+
+    return status ? `${friendlyMessage} (${status})` : friendlyMessage;
   }
-  return `${fallbackMessage} ("${technicalMsg}")`;
+  
+  if (error instanceof Error) {
+    return `${fallbackMessage} (${error.message})`;
+  }
+  
+  return `${fallbackMessage} (${String(error)})`;
 };
 
 
