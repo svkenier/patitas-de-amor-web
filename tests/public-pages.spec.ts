@@ -30,10 +30,11 @@ test.describe('Páginas Públicas y Navegación', () => {
 
     const images = await page.locator('img').all();
     for (const img of images) {
-      const isVisible = await img.isVisible();
-      if (isVisible) {
-        const naturalWidth = await img.evaluate((el: HTMLImageElement) => el.naturalWidth);
-        expect(naturalWidth).toBeGreaterThan(0);
+      if (await img.isVisible()) {
+        await expect(async () => {
+          const isLoaded = await img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0);
+          expect(isLoaded).toBe(true);
+        }).toPass({ timeout: 5000 });
       }
     }
   });

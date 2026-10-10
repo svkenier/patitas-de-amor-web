@@ -19,7 +19,7 @@ test.describe('Autenticación y Rutas Privadas', () => {
 
     const alert = page.locator('.MuiAlert-message');
     await expect(alert).toBeVisible();
-    await expect(alert).toContainText(/Credenciales/i);
+    await expect(alert).toContainText(/Usuario o contraseña/i);
   });
 
   test('Higiene: Trim de username y password, y visualización en onBlur', async ({ page }) => {
