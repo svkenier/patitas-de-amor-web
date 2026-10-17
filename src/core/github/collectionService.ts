@@ -1,4 +1,11 @@
-import { getFile, putFile, deleteFile, extractPathFromCdnUrl } from './github.js';
+import {
+  getFile,
+  putFile,
+  extractPathFromCdnUrl,
+  createBlob,
+  commitGitTree,
+  type TreeItem,
+} from './github.js';
 import type { Env } from '../auth/auth.js';
 
 export interface ImageUploadInfo {
@@ -60,116 +67,106 @@ export async function upsertDocument<T extends { id: string }>(
     }
   }
 
-  // Registro de imágenes subidas en esta operación para permitir rollback ante fallos
-  const uploadedImagePaths: string[] = [];
+  // 1. Subir blobs de imágenes nuevas concurrentemente (Git Blobs API - no crea commits en la rama)
+  const imageEntries: TreeItem[] = await Promise.all(
+    newImages.map(async (img) => {
+      const cleanBase64 = img.base64.replace(/^data:[^;]+;base64,/, '').trim();
+      const blobSha = await createBlob(cleanBase64, 'base64', env);
+      return {
+        path: img.path,
+        mode: '100644',
+        type: 'blob',
+        sha: blobSha,
+      };
+    })
+  );
 
-  try {
-    for (const img of newImages) {
-      await putFile(img.path, { type: 'base64', base64: img.base64 }, `${isUpdate ? 'Update' : 'Add'} image for ${id}`, env);
-      uploadedImagePaths.push(img.path);
+  // 2. Entradas de eliminación para imágenes marcadas (sha: null las borra del árbol)
+  const deleteEntries: TreeItem[] = [];
+  for (const url of imagesToDelete) {
+    const p = extractPathFromCdnUrl(url, env);
+    if (p) {
+      deleteEntries.push({
+        path: p,
+        mode: '100644',
+        type: 'blob',
+        sha: null,
+      });
     }
-
-    const index = array.findIndex(item => item.id === id);
-    if (index >= 0) {
-      array[index] = document;
-    } else {
-      array.unshift(document);
-    }
-
-    const indFile = await getFile(individualJsonPath, env);
-    await putFile(
-      individualJsonPath,
-      { type: 'json', data: document },
-      `${isUpdate ? 'Update' : 'Add'} individual JSON for ${id}`,
-      env,
-      indFile?.sha
-    );
-
-    // Bucle de reintento con backoff exponencial para actualización del índice maestro (HTTP 409 Conflict)
-    const MAX_RETRIES = 3;
-    let masterSha = masterFile?.sha;
-    let currentArray = array;
-
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        if (attempt > 0) {
-          // Re-obtener la versión más reciente del archivo maestro en GitHub
-          const refreshedMaster = await getFile(masterJsonPath, env);
-          masterSha = refreshedMaster?.sha;
-          let refreshedArray: T[] = [];
-          if (refreshedMaster) {
-            try {
-              const parsed = JSON.parse(Buffer.from(refreshedMaster.content, 'base64').toString('utf-8'));
-              if (Array.isArray(parsed)) refreshedArray = parsed;
-              else {
-                const firstArray = Object.values(parsed).find(Array.isArray);
-                refreshedArray = (firstArray as T[]) || [];
-              }
-            } catch {
-              refreshedArray = [];
-            }
-          }
-          const itemIdx = refreshedArray.findIndex(item => item.id === id);
-          if (itemIdx >= 0) {
-            refreshedArray[itemIdx] = document;
-          } else {
-            refreshedArray.unshift(document);
-          }
-          currentArray = refreshedArray;
-        }
-
-        await putFile(
-          masterJsonPath,
-          { type: 'json', data: currentArray },
-          `${isUpdate ? 'Update' : 'Add'} document ${id} in master JSON`,
-          env,
-          masterSha
-        );
-        break; // Éxito
-      } catch (err: any) {
-        const isConflict = /does not match|conflict|409/i.test(err?.message ?? '');
-        if (isConflict && attempt < MAX_RETRIES - 1) {
-          const baseMs = 300 * Math.pow(2, attempt); // 300ms, 600ms, 1200ms
-          const jitter = Math.floor(Math.random() * 150);
-          console.warn(`[GitHub 409 Conflict]: Reintento ${attempt + 1}/${MAX_RETRIES} para ${masterJsonPath} tras ${baseMs + jitter}ms...`);
-          await delay(baseMs + jitter);
-          continue;
-        }
-        throw err;
-      }
-    }
-
-    // Una vez asegurado el commit del master JSON, se eliminan las imágenes antiguas marcadas
-    for (const url of imagesToDelete) {
-      const oldPath = extractPathFromCdnUrl(url, env);
-      if (oldPath) {
-        try {
-          const oldFile = await getFile(oldPath, env);
-          if (oldFile) await deleteFile(oldPath, oldFile.sha, `Remove old image for ${id}`, env);
-        } catch (e) {
-          console.warn('Failed to delete old image', oldPath, e);
-        }
-      }
-    }
-
-    return document;
-  } catch (error) {
-    // Compensación / Rollback de imágenes recién subidas si la transacción falló
-    if (uploadedImagePaths.length > 0) {
-      console.warn(`[Transaction Rollback]: Limpiando ${uploadedImagePaths.length} imágenes huérfanas tras fallo de guardado...`);
-      for (const imgPath of uploadedImagePaths) {
-        try {
-          const fileToCleanup = await getFile(imgPath, env);
-          if (fileToCleanup) {
-            await deleteFile(fileToCleanup.path, fileToCleanup.sha, `Rollback orphaned image: ${imgPath}`, env);
-          }
-        } catch (cleanupErr) {
-          console.warn(`[Rollback Warning]: No se pudo eliminar imagen huérfana ${imgPath}`, cleanupErr);
-        }
-      }
-    }
-    throw error;
   }
+
+  // 3. Ficha individual JSON
+  const indJsonEntry: TreeItem = {
+    path: individualJsonPath,
+    mode: '100644',
+    type: 'blob',
+    content: JSON.stringify(document, null, 2),
+  };
+
+  // 4. Actualizar array maestro
+  const index = array.findIndex(item => item.id === id);
+  if (index >= 0) {
+    array[index] = document;
+  } else {
+    array.unshift(document);
+  }
+
+  // 5. Commit atómico en Git con reintento ante concurrencia (422)
+  const MAX_RETRIES = 3;
+  let currentArray = array;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        const refreshedMaster = await getFile(masterJsonPath, env);
+        let refreshedArray: T[] = [];
+        if (refreshedMaster) {
+          try {
+            const parsed = JSON.parse(Buffer.from(refreshedMaster.content, 'base64').toString('utf-8'));
+            refreshedArray = Array.isArray(parsed) ? parsed : (Object.values(parsed).find(Array.isArray) as T[]) || [];
+          } catch {
+            refreshedArray = [];
+          }
+        }
+        const itemIdx = refreshedArray.findIndex(item => item.id === id);
+        if (itemIdx >= 0) {
+          refreshedArray[itemIdx] = document;
+        } else {
+          refreshedArray.unshift(document);
+        }
+        currentArray = refreshedArray;
+      }
+
+      const masterJsonEntry: TreeItem = {
+        path: masterJsonPath,
+        mode: '100644',
+        type: 'blob',
+        content: JSON.stringify(currentArray, null, 2),
+      };
+
+      const documentName = (document as any).nombre || (document as any).title || id;
+      await commitGitTree(
+        {
+          message: `${isUpdate ? 'Update' : 'Add'} document ${id}: ${documentName}`,
+          entries: [...imageEntries, indJsonEntry, masterJsonEntry, ...deleteEntries],
+        },
+        env
+      );
+      break;
+    } catch (err: any) {
+      const isConflict = err?.status === 422 || /422|conflict|fast-forward/i.test(err?.message ?? '');
+      if (isConflict && attempt < MAX_RETRIES - 1) {
+        const baseMs = 300 * Math.pow(2, attempt);
+        const jitter = Math.floor(Math.random() * 150);
+        console.warn(`[Git Tree Conflict]: Reintento ${attempt + 1}/${MAX_RETRIES} para ${masterJsonPath} tras ${baseMs + jitter}ms...`);
+        await delay(baseMs + jitter);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  return document;
 }
 
 export async function deleteDocument<T extends { id: string }>(
@@ -200,32 +197,38 @@ export async function deleteDocument<T extends { id: string }>(
   const documentName = (array[index] as any).nombre || (array[index] as any).title || id;
   array.splice(index, 1);
 
-  await putFile(
-    masterJsonPath,
-    { type: 'json', data: array },
-    `Delete document ${id}: ${documentName}`,
-    env,
-    masterFile.sha
-  );
+  const masterEntry: TreeItem = {
+    path: masterJsonPath,
+    mode: '100644',
+    type: 'blob',
+    content: JSON.stringify(array, null, 2),
+  };
 
-  try {
-    const indFile = await getFile(individualJsonPath, env);
-    if (indFile) {
-      await deleteFile(individualJsonPath, indFile.sha, `Delete individual JSON for ${id}`, env);
-    }
-  } catch (err) {
-    console.warn(`Could not delete individual JSON for ${id}`, err);
-  }
+  const indJsonEntry: TreeItem = {
+    path: individualJsonPath,
+    mode: '100644',
+    type: 'blob',
+    sha: null,
+  };
 
+  const imageEntries: TreeItem[] = [];
   for (const url of imagesToDelete) {
-    const imgPath = extractPathFromCdnUrl(url, env);
-    if (imgPath) {
-      try {
-        const file = await getFile(imgPath, env);
-        if (file) await deleteFile(imgPath, file.sha, `Delete image for ${id}`, env);
-      } catch (err) {
-        console.warn(`Could not delete image ${imgPath}`, err);
-      }
+    const p = extractPathFromCdnUrl(url, env);
+    if (p) {
+      imageEntries.push({
+        path: p,
+        mode: '100644',
+        type: 'blob',
+        sha: null,
+      });
     }
   }
+
+  await commitGitTree(
+    {
+      message: `Delete document ${id}: ${documentName}`,
+      entries: [masterEntry, indJsonEntry, ...imageEntries],
+    },
+    env
+  );
 }

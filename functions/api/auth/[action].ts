@@ -47,6 +47,15 @@ async function handleLogin(request: Request, env: Env) {
     }
 
     const usernameClean = String(username).trim().toLowerCase();
+    if (usernameClean) {
+      const userLimitRes = await checkRateLimit(getAuthRateLimit(env), `auth:account:${usernameClean}`);
+      if (!userLimitRes.success) {
+        return new Response(JSON.stringify({ error: 'Demasiados intentos para esta cuenta. Intenta más tarde.' }), { 
+          status: 429, 
+          headers: { 'Content-Type': 'application/json', 'X-RateLimit-Limit': userLimitRes.limit.toString(), 'X-RateLimit-Remaining': userLimitRes.remaining.toString() } 
+        });
+      }
+    }
     let user = await getUser(usernameClean, env) as any;
     
     if (typeof user === 'string') {

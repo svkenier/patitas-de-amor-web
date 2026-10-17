@@ -90,3 +90,36 @@ describe('Master User Seed', () => {
     expect(kv.setUser).not.toHaveBeenCalled();
   });
 });
+
+describe('Reglas de creación de roles (RBAC - Invariante de owner)', () => {
+  it('Nadie puede crear o asignar el rol owner (prohibición estricta)', async () => {
+    const { canCreateRole } = await import('../../src/core/types/user.js');
+    expect(canCreateRole('owner', 'owner')).toBe(false);
+    expect(canCreateRole('superadmin', 'owner')).toBe(false);
+    expect(canCreateRole('encargado', 'owner')).toBe(false);
+    expect(canCreateRole('voluntario', 'owner')).toBe(false);
+  });
+
+  it('Owner puede crear superadmin, encargado y voluntario', async () => {
+    const { canCreateRole } = await import('../../src/core/types/user.js');
+    expect(canCreateRole('owner', 'superadmin')).toBe(true);
+    expect(canCreateRole('owner', 'encargado')).toBe(true);
+    expect(canCreateRole('owner', 'voluntario')).toBe(true);
+  });
+
+  it('Superadmin puede crear encargado y voluntario pero no superadmin ni owner', async () => {
+    const { canCreateRole } = await import('../../src/core/types/user.js');
+    expect(canCreateRole('superadmin', 'encargado')).toBe(true);
+    expect(canCreateRole('superadmin', 'voluntario')).toBe(true);
+    expect(canCreateRole('superadmin', 'superadmin')).toBe(false);
+    expect(canCreateRole('superadmin', 'owner')).toBe(false);
+  });
+
+  it('Encargado solo puede crear voluntario', async () => {
+    const { canCreateRole } = await import('../../src/core/types/user.js');
+    expect(canCreateRole('encargado', 'voluntario')).toBe(true);
+    expect(canCreateRole('encargado', 'encargado')).toBe(false);
+    expect(canCreateRole('encargado', 'superadmin')).toBe(false);
+    expect(canCreateRole('encargado', 'owner')).toBe(false);
+  });
+});

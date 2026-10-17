@@ -8,11 +8,11 @@
  */
 
 import { Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useAuth } from '@ui/context/AuthContext';
-import { ROLE_LEVEL, type UserRole } from '@core/types/user';
+import { ROLE_LEVEL, type UserRole, type PublicUser } from '@core/types/user';
 import { get } from '@core/api/client';
 import type { ReactNode } from 'react';
 
@@ -29,8 +29,16 @@ export default function ProtectedRoute({
   children,
   minRole = 'voluntario',
 }: ProtectedRouteProps) {
-  const { isLoading, isAuthenticated, user } = useAuth();
+  const { isLoading, isAuthenticated, user, syncUser } = useAuth();
   const location = useLocation();
+
+  const userRef = useRef(user);
+  const syncUserRef = useRef(syncUser);
+
+  useEffect(() => {
+    userRef.current = user;
+    syncUserRef.current = syncUser;
+  }, [user, syncUser]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -41,7 +49,11 @@ export default function ProtectedRoute({
     const checkSession = async () => {
       lastChecked = Date.now();
       try {
-        await get('/auth/verify');
+        const res = await get<{ user: PublicUser }>('/auth/verify');
+        const currentUser = userRef.current;
+        if (res?.user && (res.user.role !== currentUser?.role || res.user.username !== currentUser?.username)) {
+          syncUserRef.current(res.user);
+        }
       } catch {
         // El interceptor de Axios (client.ts) captura el 401, limpia la sesión y redirige
       }

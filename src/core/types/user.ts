@@ -187,6 +187,7 @@ export function canManage(actorRole: UserRole, targetRole: UserRole): boolean {
  * - `encargado` solo puede crear `encargado` y `voluntario`.
  */
 export function canCreateRole(actorRole: UserRole, newRole: UserRole): boolean {
+  if (newRole === 'owner') return false;
   if (actorRole === 'owner') return true;
   if (actorRole === 'superadmin') return newRole === 'encargado' || newRole === 'voluntario';
   if (actorRole === 'encargado')  return newRole === 'voluntario';

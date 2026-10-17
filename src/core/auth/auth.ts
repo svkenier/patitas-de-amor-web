@@ -62,7 +62,10 @@ export async function getAuthPayload(request: Request, env: Env): Promise<JWTPay
     if (payloadVersion !== dbVersion) {
       return null;
     }
-    return payload;
+    return {
+      ...payload,
+      role: user.role,
+    };
   } catch {
     return null;
   }

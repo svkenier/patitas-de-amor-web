@@ -197,7 +197,12 @@ export async function onRequest(context: any) {
       }
 
       const updates: any = {};
-      if (body.role) updates.role = body.role;
+      if (body.role) {
+        updates.role = body.role;
+        if (target.role !== body.role) {
+          updates.tokenVersion = (target.tokenVersion || 1) + 1;
+        }
+      }
 
       await updateUserPreservingTTL(body.username, updates, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
@@ -311,6 +316,7 @@ export async function onRequest(context: any) {
     return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
   } catch (err: any) {
+    console.error('[Users API Error in action ' + action + ']:', err);
     if (err.message?.includes('Forbidden')) {
       return new Response(JSON.stringify({ error: err.message }), { status: 403 });
     }
