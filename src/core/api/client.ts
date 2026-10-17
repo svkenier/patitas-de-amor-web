@@ -63,10 +63,14 @@ apiClient.interceptors.request.use(
     // Inyectar ETag si existe en caché para peticiones GET
     if (config.method?.toLowerCase() === 'get' && config.url) {
       if (config.headers) {
-        // Anti-cache headers para evitar que el navegador sirva versiones obsoletas
-        config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-        config.headers['Pragma'] = 'no-cache';
-        config.headers['Expires'] = '0';
+        const isPublicCacheable = (config.url.includes('/public/') || config.url.includes('/settings')) && !config.url.includes('scope=admin');
+
+        if (!isPublicCacheable) {
+          // Anti-cache headers para peticiones privadas o administrativas
+          config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+          config.headers['Pragma'] = 'no-cache';
+          config.headers['Expires'] = '0';
+        }
         
         const cached = etagCache.get(config.url);
         if (cached) {

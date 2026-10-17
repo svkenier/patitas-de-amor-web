@@ -85,11 +85,7 @@ async function handleLogin(request: Request, env: Env) {
     const token = signToken(user.username, user.role, user.tokenVersion ?? 1, env);
     await updateLastLogin(user.username, env);
     
-    if (user.isProtected || user.role === 'owner' || (env.ADMIN_USER && usernameClean === env.ADMIN_USER.toLowerCase())) {
-      await cancelTTL(user.username, env);
-    } else {
-      await activateTTL(user.username, env);
-    }
+    await cancelTTL(user.username, env);
 
     const headers = new Headers();
     headers.set('Content-Type', 'application/json');

@@ -32,8 +32,7 @@ export const TTL_30_DAYS = 30 * 24 * 60 * 60; // 2,592,000 segundos
 export const TTL_6_MONTHS = 180 * 24 * 60 * 60; // 15,552,000 segundos
 
 export function getRoleTTL(role: UserRole): number | null {
-  if (role === 'owner') return null;
-  if (role === 'superadmin') return TTL_6_MONTHS;
+  if (role === 'owner' || role === 'superadmin') return null;
   return TTL_30_DAYS;
 }
 
@@ -63,7 +62,7 @@ export async function setUser(user: KVUser, env: Env, ttl?: number): Promise<voi
   const redis = getRedis(env);
   let finalTtl = ttl;
   
-  if (finalTtl === undefined && !user.isProtected && user.role !== 'owner') {
+  if (finalTtl === undefined && !user.isProtected && user.role !== 'owner' && user.role !== 'superadmin') {
     const roleTtl = getRoleTTL(user.role);
     if (roleTtl !== null) {
       finalTtl = roleTtl;
@@ -116,7 +115,7 @@ export async function updateUserPreservingTTL(username: string, updates: Partial
 
 export async function activateTTL(username: string, env: Env, durationSeconds?: number): Promise<void> {
   const user = await getUser(username, env);
-  if (!user || user.isProtected || isRootUser(username, env) || user.role === 'owner') return;
+  if (!user || user.isProtected || isRootUser(username, env) || user.role === 'owner' || user.role === 'superadmin') return;
 
   const finalDuration = durationSeconds ?? getRoleTTL(user.role);
   if (finalDuration !== null) {

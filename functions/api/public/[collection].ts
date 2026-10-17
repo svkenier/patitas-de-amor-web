@@ -52,21 +52,37 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     
     if (ghRes.etag) headers.set('ETag', ghRes.etag);
 
-    let records: any[] = [];
-    if (ghRes.data && ghRes.data.content) {
-      try {
-        // [QUAL-01 & QUAL-02] Decodificación UTF-8 segura y eficiente con Buffer
-        const decodedStr = Buffer.from(ghRes.data.content, 'base64').toString('utf-8');
-        const parsed = JSON.parse(decodedStr);
-        if (Array.isArray(parsed)) {
-          records = parsed;
-        } else {
-          const firstArray = Object.values(parsed).find(Array.isArray);
-          records = (firstArray as any[]) || [];
+    if (!ghRes.data || !ghRes.data.content) {
+      return new Response(JSON.stringify({ error: 'Servicio temporalmente no disponible' }), {
+        status: 503,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache',
+          'Retry-After': '30'
         }
-      } catch {
-        records = [];
+      });
+    }
+
+    let records: any[] = [];
+    try {
+      // [QUAL-01 & QUAL-02] Decodificación UTF-8 segura y eficiente con Buffer
+      const decodedStr = Buffer.from(ghRes.data.content, 'base64').toString('utf-8');
+      const parsed = JSON.parse(decodedStr);
+      if (Array.isArray(parsed)) {
+        records = parsed;
+      } else {
+        const firstArray = Object.values(parsed).find(Array.isArray);
+        records = (firstArray as any[]) || [];
       }
+    } catch {
+      return new Response(JSON.stringify({ error: 'Servicio temporalmente no disponible' }), {
+        status: 503,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache',
+          'Retry-After': '30'
+        }
+      });
     }
 
     // Filtrar registros ocultos para usuarios NO autenticados mediante el predicado canónico

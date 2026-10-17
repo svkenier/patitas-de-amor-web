@@ -59,6 +59,12 @@
   },
   "overrides": {
     "@types/react": "^18.3.23",
-    "@types/react-dom": "^18.3.7"
+    "@types/react-dom": "^18.3.7",
+    "shell-quote": "^1.11.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "shell-quote": "^1.11.0"
+    }
   }
 }

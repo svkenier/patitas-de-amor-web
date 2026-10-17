@@ -3,6 +3,7 @@ import { getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
 import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL, isRootUser } from '../../../src/core/auth/kv.js';
 import { hashPassword, verifyPassword } from '../../../src/core/auth/crypto.js';
 import { canManage, canCreateRole, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
+import { getAuthRateLimit, checkRateLimit } from '../../../src/core/auth/rate-limit.js';
 
 const usernameSchema = z
   .string()
@@ -37,7 +38,6 @@ const ResetPasswordSchema = z.object({
 const UpdateUserSchema = z.object({
   username: usernameSchema,
   role: z.enum(['voluntario', 'encargado', 'superadmin', 'owner']).optional(),
-  password: passwordSchema.optional(),
 });
 
 export async function onRequest(context: any) {
@@ -198,16 +198,21 @@ export async function onRequest(context: any) {
 
       const updates: any = {};
       if (body.role) updates.role = body.role;
-      if (body.password) {
-        updates.password_hash = await hashPassword(body.password.trim());
-        updates.tokenVersion = (target.tokenVersion || 1) + 1;
-      }
 
       await updateUserPreservingTTL(body.username, updates, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     if (request.method === 'POST' && action === 'reset-password') {
+      const ip = request.headers.get('cf-connecting-ip') ?? '127.0.0.1';
+      const limitRes = await checkRateLimit(getAuthRateLimit(env), `reset-pw:${payload.sub}:${ip}`);
+      if (!limitRes.success) {
+        return new Response(JSON.stringify({ error: 'Demasiados intentos. Intenta más tarde.' }), { 
+          status: 429, 
+          headers: { 'Content-Type': 'application/json', 'X-RateLimit-Limit': limitRes.limit.toString(), 'X-RateLimit-Remaining': limitRes.remaining.toString() } 
+        });
+      }
+
       let rawBody: unknown;
       try {
         rawBody = await request.json();
@@ -224,22 +229,28 @@ export async function onRequest(context: any) {
       }
 
       const body = parseResult.data;
-      const targetUser = (body.username || body.target_username)!;
+      const targetUser = (body.username || body.target_username)!.trim().toLowerCase();
+
+      if (targetUser === payload.sub.toLowerCase()) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: para cambiar tu propia contraseña usa la opción de cambio de contraseña.' }), { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
 
       const target = await getUser(targetUser, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
-      if (targetUser !== payload.sub) {
-        if (target.role === 'owner' || isRootUser(target.username, env)) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado: la cuenta del propietario es inviolable.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-        }
-        if (ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role]) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes modificar la contraseña de un usuario de igual o mayor jerarquía.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-        }
+      if (target.role === 'owner' || isRootUser(target.username, env)) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: la cuenta del propietario es inviolable.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role]) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes modificar la contraseña de un usuario de igual o mayor jerarquía.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
       }
 
       const hashed = await hashPassword(body.new_password.trim());
       await updateUserPreservingTTL(targetUser, { password_hash: hashed, tokenVersion: (target.tokenVersion || 1) + 1 }, env);
+      await activateTTL(targetUser, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
     
@@ -260,6 +271,15 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'change-password') {
+      const ip = request.headers.get('cf-connecting-ip') ?? '127.0.0.1';
+      const limitRes = await checkRateLimit(getAuthRateLimit(env), `change-pw:${payload.sub}:${ip}`);
+      if (!limitRes.success) {
+        return new Response(JSON.stringify({ error: 'Demasiados intentos. Intenta más tarde.' }), { 
+          status: 429, 
+          headers: { 'Content-Type': 'application/json', 'X-RateLimit-Limit': limitRes.limit.toString(), 'X-RateLimit-Remaining': limitRes.remaining.toString() } 
+        });
+      }
+
       let rawBody: unknown;
       try {
         rawBody = await request.json();
