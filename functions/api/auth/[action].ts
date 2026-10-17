@@ -1,5 +1,5 @@
 import { getAuthRateLimit, checkRateLimit } from '../../../src/core/auth/rate-limit.js';
-import { signToken, verifyToken, getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
+import { signToken, getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
 import { getUser, updateLastLogin, activateTTL, cancelTTL, listUsers, setUser, updateUserPreservingTTL } from '../../../src/core/auth/kv.js';
 import { verifyPassword, hashPassword } from '../../../src/core/auth/crypto.js';
 
@@ -21,11 +21,10 @@ async function handleLogin(request: Request, env: Env) {
     await ensureSeeder(env);
   } catch (err) {
     if (err && (err as any).name === 'ConfigurationError') {
+      console.error('[Auth Config Error in login]:', err);
       return new Response(JSON.stringify({
         ok: false,
-        errorType: 'CONFIGURATION_ERROR',
-        provider: (err as any).provider,
-        message: (err as Error).message
+        error: 'Error en la configuración del servicio de autenticación'
       }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
     console.error('ensureSeeder error:', err);
@@ -124,11 +123,10 @@ async function handleVerify(request: Request, env: Env) {
     await ensureSeeder(env);
   } catch (err) {
     if (err && (err as any).name === 'ConfigurationError') {
+      console.error('[Auth Config Error in verify]:', err);
       return new Response(JSON.stringify({
         ok: false,
-        errorType: 'CONFIGURATION_ERROR',
-        provider: (err as any).provider,
-        message: (err as Error).message
+        error: 'Error en la configuración del servicio de autenticación'
       }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
     console.error('ensureSeeder error:', err);

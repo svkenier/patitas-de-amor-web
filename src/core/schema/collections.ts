@@ -11,7 +11,7 @@ const safePrimitiveSchema = z.union([
 ]);
 
 export const RecordUpsertSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'El ID solo puede contener caracteres alfanuméricos, guiones y guiones bajos').max(100).optional(),
   title: z.string().min(1, 'El campo title es requerido').max(200, 'El título no puede exceder 200 caracteres').trim(),
   description: z.string().max(10_000, 'La descripción no puede exceder 10000 caracteres').optional(),
   category: z.string().max(100).optional(),
