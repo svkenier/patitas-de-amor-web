@@ -18,6 +18,12 @@ export const onRequest: PagesFunction = async (context) => {
     newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
     newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    newHeaders.set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://raw.githubusercontent.com; connect-src 'self' https://*.upstash.io https://api.github.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+    );
+    newHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    newHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
 
     const body = (response.status === 204 || response.status === 304) ? null : response.body;
 

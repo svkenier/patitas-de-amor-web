@@ -109,8 +109,17 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'DELETE' && action === 'delete') {
-      const body = await request.json() as { username: string };
-      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const body = rawBody as { username?: string };
+      if (!body || typeof body !== 'object' || !body.username) {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
 
       if (body.username === payload.sub) {
         return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes eliminarte a ti mismo.' }), { 
@@ -264,8 +273,17 @@ export async function onRequest(context: any) {
         return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario puede forzar el cierre de sesión.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
       }
       
-      const body = await request.json() as { username: string };
-      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const body = rawBody as { username?: string };
+      if (!body || typeof body !== 'object' || !body.username) {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
 
       const target = await getUser(body.username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });

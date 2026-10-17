@@ -197,13 +197,6 @@ export async function deleteDocument<T extends { id: string }>(
   const documentName = (array[index] as any).nombre || (array[index] as any).title || id;
   array.splice(index, 1);
 
-  const masterEntry: TreeItem = {
-    path: masterJsonPath,
-    mode: '100644',
-    type: 'blob',
-    content: JSON.stringify(array, null, 2),
-  };
-
   const indJsonEntry: TreeItem = {
     path: individualJsonPath,
     mode: '100644',
@@ -224,11 +217,54 @@ export async function deleteDocument<T extends { id: string }>(
     }
   }
 
-  await commitGitTree(
-    {
-      message: `Delete document ${id}: ${documentName}`,
-      entries: [masterEntry, indJsonEntry, ...imageEntries],
-    },
-    env
-  );
+  const MAX_RETRIES = 3;
+  let currentArray = array;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        const refreshedMaster = await getFile(masterJsonPath, env);
+        let refreshedArray: T[] = [];
+        if (refreshedMaster) {
+          try {
+            const parsed = JSON.parse(Buffer.from(refreshedMaster.content, 'base64').toString('utf-8'));
+            refreshedArray = Array.isArray(parsed) ? parsed : (Object.values(parsed).find(Array.isArray) as T[]) || [];
+          } catch {
+            refreshedArray = [];
+          }
+        }
+        const itemIdx = refreshedArray.findIndex(item => item.id === id);
+        if (itemIdx >= 0) {
+          refreshedArray.splice(itemIdx, 1);
+        }
+        currentArray = refreshedArray;
+      }
+
+      const masterEntry: TreeItem = {
+        path: masterJsonPath,
+        mode: '100644',
+        type: 'blob',
+        content: JSON.stringify(currentArray, null, 2),
+      };
+
+      await commitGitTree(
+        {
+          message: `Delete document ${id}: ${documentName}`,
+          entries: [masterEntry, indJsonEntry, ...imageEntries],
+        },
+        env
+      );
+      break;
+    } catch (err: any) {
+      const isConflict = err?.status === 422 || /422|conflict|fast-forward/i.test(err?.message ?? '');
+      if (isConflict && attempt < MAX_RETRIES - 1) {
+        const baseMs = 300 * Math.pow(2, attempt);
+        const jitter = Math.floor(Math.random() * 150);
+        console.warn(`[Git Tree Conflict]: Reintento ${attempt + 1}/${MAX_RETRIES} para ${masterJsonPath} tras ${baseMs + jitter}ms...`);
+        await delay(baseMs + jitter);
+        continue;
+      }
+      throw err;
+    }
+  }
 }
