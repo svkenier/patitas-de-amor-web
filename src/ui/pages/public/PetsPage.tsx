@@ -53,7 +53,7 @@ export default function PetsPage() {
   const { data, isLoading, isError, error, refetch } = useQuery<{ records: BaseRecord[]; total: number }>({
     queryKey: ['pets-index'],
     queryFn: async () => {
-      const res = await get<BaseRecord[] | { records: BaseRecord[] }>(`/public/pets?t=${Date.now()}`);
+      const res = await get<BaseRecord[] | { records: BaseRecord[] }>('/public/pets');
       let records = Array.isArray(res) ? res : (res?.records ?? []);
       records = records.filter(p => p.status !== 'oculto' && p.attributes?.is_active !== false);
       return { 

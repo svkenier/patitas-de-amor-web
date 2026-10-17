@@ -2,6 +2,8 @@ import { getFileWithETag } from '../../../src/core/github/github.js';
 import { getPublicRateLimit, checkRateLimit } from '../../../src/core/auth/rate-limit.js';
 import type { Env } from '../../../src/core/auth/auth.js';
 
+const ALLOWED_COLLECTIONS = new Set(['pets', 'announcements']);
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   const collectionName = params.collection as string;
@@ -10,6 +12,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   if (request.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Método no permitido' }), { status: 405 });
+  }
+
+  if (!ALLOWED_COLLECTIONS.has(collectionName)) {
+    return new Response(JSON.stringify({ error: 'Colección no permitida' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   // Abstracción agnóstica de colección

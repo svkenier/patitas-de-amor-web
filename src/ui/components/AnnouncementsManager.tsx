@@ -56,8 +56,7 @@ export default function AnnouncementsManager() {
   const { data: announcements, isLoading, isError } = useQuery<BaseRecord[]>({
     queryKey: ['announcements'],
     queryFn: async () => {
-      // Use internal api bypassing CDN cache for admin
-      const data = await get<any>(`/public/announcements?t=${Date.now()}`);
+      const data = await get<any>('/public/announcements');
       return Array.isArray(data) ? data : (data?.records ?? []);
     },
   });

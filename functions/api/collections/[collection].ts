@@ -6,6 +6,8 @@ import { cdnImageUrl, generateItemId } from '../../../src/core/github/github.js'
 import type { Env } from '../../../src/core/auth/auth.js';
 import { RecordUpsertSchema } from '../../../src/core/schema/collections.js';
 
+const ALLOWED_COLLECTIONS = new Set(['pets', 'announcements']);
+
 const getCollectionPaths = (collection: string) => ({
   master: `data/${collection}.json`,
   ind: (id: string) => `data/${collection}/${id}.json`,
@@ -18,6 +20,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
 
+  if (!ALLOWED_COLLECTIONS.has(collectionName)) {
+    return new Response(JSON.stringify({ error: 'Colección no permitida' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   const paths = getCollectionPaths(collectionName);
 
   const payload = await getAuthPayload(request, env);
@@ -28,7 +37,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   }
 
   if (request.method === 'POST' || request.method === 'PUT') return handleUpsert(request, env, paths, request.method === 'PUT');
-  if (request.method === 'DELETE') return handleDelete(request, env, paths);
+  if (request.method === 'DELETE') {
+    if (ROLE_LEVEL[payload.role as UserRole] < ROLE_LEVEL['voluntario']) {
+      return new Response(JSON.stringify({ error: 'Permiso insuficiente para eliminar registros' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    return handleDelete(request, env, paths);
+  }
 
   return new Response(JSON.stringify({ error: 'Método no permitido' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
 };

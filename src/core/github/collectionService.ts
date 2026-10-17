@@ -19,6 +19,8 @@ export async function getCollection<T extends { id: string }>(masterJsonPath: st
   }
 }
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function upsertDocument<T extends { id: string }>(
   masterJsonPath: string,
   individualJsonPath: string,
@@ -58,48 +60,117 @@ export async function upsertDocument<T extends { id: string }>(
     }
   }
 
-  for (const img of newImages) {
-    await putFile(img.path, img.base64, `${isUpdate ? 'Update' : 'Add'} image for ${id}`, env);
-  }
+  // Registro de imágenes subidas en esta operación para permitir rollback ante fallos
+  const uploadedImagePaths: string[] = [];
 
-  for (const url of imagesToDelete) {
-    const oldPath = extractPathFromCdnUrl(url, env);
-    if (oldPath) {
+  try {
+    for (const img of newImages) {
+      await putFile(img.path, img.base64, `${isUpdate ? 'Update' : 'Add'} image for ${id}`, env);
+      uploadedImagePaths.push(img.path);
+    }
+
+    const index = array.findIndex(item => item.id === id);
+    if (index >= 0) {
+      array[index] = document;
+    } else {
+      array.unshift(document);
+    }
+
+    const indFile = await getFile(individualJsonPath, env);
+    await putFile(
+      individualJsonPath,
+      JSON.stringify(document, null, 2),
+      `${isUpdate ? 'Update' : 'Add'} individual JSON for ${id}`,
+      env,
+      indFile?.sha
+    );
+
+    // Bucle de reintento con backoff exponencial para actualización del índice maestro (HTTP 409 Conflict)
+    const MAX_RETRIES = 3;
+    let masterSha = masterFile?.sha;
+    let currentArray = array;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        const oldFile = await getFile(oldPath, env);
-        if (oldFile) await deleteFile(oldPath, oldFile.sha, `Remove old image for ${id}`, env);
-      } catch (e) {
-        console.warn('Failed to delete old image', oldPath, e);
+        if (attempt > 0) {
+          // Re-obtener la versión más reciente del archivo maestro en GitHub
+          const refreshedMaster = await getFile(masterJsonPath, env);
+          masterSha = refreshedMaster?.sha;
+          let refreshedArray: T[] = [];
+          if (refreshedMaster) {
+            try {
+              const parsed = JSON.parse(Buffer.from(refreshedMaster.content, 'base64').toString('utf-8'));
+              if (Array.isArray(parsed)) refreshedArray = parsed;
+              else {
+                const firstArray = Object.values(parsed).find(Array.isArray);
+                refreshedArray = (firstArray as T[]) || [];
+              }
+            } catch {
+              refreshedArray = [];
+            }
+          }
+          const itemIdx = refreshedArray.findIndex(item => item.id === id);
+          if (itemIdx >= 0) {
+            refreshedArray[itemIdx] = document;
+          } else {
+            refreshedArray.unshift(document);
+          }
+          currentArray = refreshedArray;
+        }
+
+        const masterJsonStr = JSON.stringify(currentArray, null, 2);
+        await putFile(
+          masterJsonPath,
+          masterJsonStr,
+          `${isUpdate ? 'Update' : 'Add'} document ${id} in master JSON`,
+          env,
+          masterSha
+        );
+        break; // Éxito
+      } catch (err: any) {
+        const isConflict = /does not match|conflict|409/i.test(err?.message ?? '');
+        if (isConflict && attempt < MAX_RETRIES - 1) {
+          const baseMs = 300 * Math.pow(2, attempt); // 300ms, 600ms, 1200ms
+          const jitter = Math.floor(Math.random() * 150);
+          console.warn(`[GitHub 409 Conflict]: Reintento ${attempt + 1}/${MAX_RETRIES} para ${masterJsonPath} tras ${baseMs + jitter}ms...`);
+          await delay(baseMs + jitter);
+          continue;
+        }
+        throw err;
       }
     }
+
+    // Una vez asegurado el commit del master JSON, se eliminan las imágenes antiguas marcadas
+    for (const url of imagesToDelete) {
+      const oldPath = extractPathFromCdnUrl(url, env);
+      if (oldPath) {
+        try {
+          const oldFile = await getFile(oldPath, env);
+          if (oldFile) await deleteFile(oldPath, oldFile.sha, `Remove old image for ${id}`, env);
+        } catch (e) {
+          console.warn('Failed to delete old image', oldPath, e);
+        }
+      }
+    }
+
+    return document;
+  } catch (error) {
+    // Compensación / Rollback de imágenes recién subidas si la transacción falló
+    if (uploadedImagePaths.length > 0) {
+      console.warn(`[Transaction Rollback]: Limpiando ${uploadedImagePaths.length} imágenes huérfanas tras fallo de guardado...`);
+      for (const imgPath of uploadedImagePaths) {
+        try {
+          const fileToCleanup = await getFile(imgPath, env);
+          if (fileToCleanup) {
+            await deleteFile(fileToCleanup.path, fileToCleanup.sha, `Rollback orphaned image: ${imgPath}`, env);
+          }
+        } catch (cleanupErr) {
+          console.warn(`[Rollback Warning]: No se pudo eliminar imagen huérfana ${imgPath}`, cleanupErr);
+        }
+      }
+    }
+    throw error;
   }
-
-  const index = array.findIndex(item => item.id === id);
-  if (index >= 0) {
-    array[index] = document;
-  } else {
-    array.unshift(document);
-  }
-
-  const indFile = await getFile(individualJsonPath, env);
-  await putFile(
-    individualJsonPath,
-    JSON.stringify(document, null, 2),
-    `${isUpdate ? 'Update' : 'Add'} individual JSON for ${id}`,
-    env,
-    indFile?.sha
-  );
-
-  const masterJsonStr = JSON.stringify(array, null, 2);
-  await putFile(
-    masterJsonPath,
-    masterJsonStr,
-    `${isUpdate ? 'Update' : 'Add'} document ${id} in master JSON`,
-    env,
-    masterFile?.sha
-  );
-
-  return document;
 }
 
 export async function deleteDocument<T extends { id: string }>(

@@ -110,7 +110,7 @@ export default function Admin() {
   const { data: petsData, isLoading: petsLoading, isError: petsError } = useQuery<PaginatedRecords>({
     queryKey: ['pets-index'],
     queryFn: async () => {
-      const res = await get<BaseRecord[] | { records: BaseRecord[] }>(`/public/pets?t=${Date.now()}`);
+      const res = await get<BaseRecord[] | { records: BaseRecord[] }>('/public/pets');
       const records: BaseRecord[] = Array.isArray(res)
         ? res
         : (res as { records: BaseRecord[] }).records ?? [];
@@ -138,6 +138,7 @@ export default function Admin() {
   const deletePetMutation = useMutation({
     mutationFn: (id: string) => del('/collections/pets', { data: { id } }),
     onSuccess: () => {
+      clearEtagCache('pets');
       void qc.invalidateQueries({ queryKey: ['pets-index'] });
       setPetToDelete(null);
       showToast('Mascota eliminada del registro');

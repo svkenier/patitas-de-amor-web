@@ -85,7 +85,9 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     const url = response.config.url;
-    if (response.config.method?.toLowerCase() === 'get' && url) {
+    const method = response.config.method?.toLowerCase();
+
+    if (method === 'get' && url) {
       if (response.status === 304) {
         const cached = etagCache.get(url);
         if (cached) {
@@ -97,6 +99,21 @@ apiClient.interceptors.response.use(
         if (etag) {
           etagCache.set(url, { etag, data: response.data });
         }
+      }
+    } else if (method && ['post', 'put', 'delete', 'patch'].includes(method) && url) {
+      // Invalida automáticamente la caché ETag tras mutaciones exitosas en colecciones o configuración
+      const collectionMatch = url.match(/(?:\/|^)collections\/([^/?#]+)/);
+      if (collectionMatch) {
+        const col = collectionMatch[1];
+        clearEtagCache(`/public/${col}`);
+        clearEtagCache(`/collections/${col}`);
+        clearEtagCache(col);
+      } else if (url.includes('settings')) {
+        clearEtagCache('/settings');
+        clearEtagCache('/public/settings');
+        clearEtagCache('settings');
+      } else {
+        clearEtagCache(url);
       }
     }
     return response;
