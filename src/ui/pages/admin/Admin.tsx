@@ -110,7 +110,7 @@ export default function Admin() {
   const { data: petsData, isLoading: petsLoading, isError: petsError } = useQuery<PaginatedRecords>({
     queryKey: ['pets-index'],
     queryFn: async () => {
-      const res = await get<BaseRecord[] | { records: BaseRecord[] }>('/public/pets');
+      const res = await get<BaseRecord[] | { records: BaseRecord[] }>('/public/pets?scope=admin');
       const records: BaseRecord[] = Array.isArray(res)
         ? res
         : (res as { records: BaseRecord[] }).records ?? [];

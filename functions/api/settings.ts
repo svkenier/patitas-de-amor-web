@@ -37,12 +37,18 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       return new Response(JSON.stringify({}), { status: 200, headers });
     }
 
-    const content = decodeURIComponent(escape(atob(ghRes.data.content)));
+    const content = Buffer.from(ghRes.data.content, 'base64').toString('utf-8');
     return new Response(content, { status: 200, headers });
   } catch (err) {
-    console.warn('[settings.ts] Error o repositorio vacío, devolviendo fallback vacío.', err);
-    // Devuelve objeto vacío con 200 OK para que el frontend no colapse
-    return new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    console.error('[settings.ts] Error conectando con GitHub API:', err);
+    return new Response(JSON.stringify({ error: 'Servicio temporalmente no disponible' }), {
+      status: 503,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache',
+        'Retry-After': '30'
+      }
+    });
   }
 };
 
@@ -82,7 +88,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     let currentData: Record<string, unknown> = {};
     if (current.data && current.data.content) {
       try {
-        const parsed: unknown = JSON.parse(decodeURIComponent(escape(atob(current.data.content))));
+        const parsed: unknown = JSON.parse(Buffer.from(current.data.content, 'base64').toString('utf-8'));
         if (!isPlainObject(parsed)) throw new Error('El archivo de configuración no es un objeto JSON');
         currentData = parsed;
       } catch (e) {

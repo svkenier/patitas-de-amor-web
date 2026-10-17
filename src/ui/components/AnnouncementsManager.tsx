@@ -56,7 +56,7 @@ export default function AnnouncementsManager() {
   const { data: announcements, isLoading, isError } = useQuery<BaseRecord[]>({
     queryKey: ['announcements'],
     queryFn: async () => {
-      const data = await get<any>('/public/announcements');
+      const data = await get<any>('/public/announcements?scope=admin');
       return Array.isArray(data) ? data : (data?.records ?? []);
     },
   });

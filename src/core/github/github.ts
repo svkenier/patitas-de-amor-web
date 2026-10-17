@@ -184,13 +184,11 @@ export async function putFile(
   switch (payload.type) {
     case 'json': {
       const jsonStr = JSON.stringify(payload.data, null, 2);
-      const bytes = new TextEncoder().encode(jsonStr);
-      finalBase64 = btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(''));
+      finalBase64 = Buffer.from(jsonStr, 'utf-8').toString('base64');
       break;
     }
     case 'text': {
-      const bytes = new TextEncoder().encode(payload.content);
-      finalBase64 = btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(''));
+      finalBase64 = Buffer.from(payload.content, 'utf-8').toString('base64');
       break;
     }
     case 'base64': {

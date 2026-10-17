@@ -1,7 +1,44 @@
+import { z } from 'zod';
 import { getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
 import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL, isRootUser } from '../../../src/core/auth/kv.js';
 import { hashPassword, verifyPassword } from '../../../src/core/auth/crypto.js';
-import { canManage, canCreateRole, type CreateUserRequest, type ResetPasswordRequest, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
+import { canManage, canCreateRole, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
+
+const usernameSchema = z
+  .string()
+  .min(3, 'El nombre de usuario debe tener al menos 3 caracteres')
+  .max(30, 'El nombre de usuario no puede exceder 30 caracteres')
+  .regex(/^[a-z0-9_]+$/, 'El usuario solo puede contener letras minúsculas, números y guión bajo');
+
+const passwordSchema = z
+  .string()
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
+  .max(100, 'La contraseña no puede exceder 100 caracteres');
+
+const CreateUserSchema = z.object({
+  username: usernameSchema,
+  password: passwordSchema,
+  role: z.enum(['voluntario', 'encargado', 'superadmin', 'owner']),
+});
+
+const ChangePasswordSchema = z.object({
+  current_password: z.string().min(1, 'Contraseña actual requerida'),
+  new_password: passwordSchema,
+});
+
+const ResetPasswordSchema = z.object({
+  username: usernameSchema.optional(),
+  target_username: usernameSchema.optional(),
+  new_password: passwordSchema,
+}).refine((data) => Boolean(data.username || data.target_username), {
+  message: 'Debe especificarse el usuario objetivo',
+});
+
+const UpdateUserSchema = z.object({
+  username: usernameSchema,
+  role: z.enum(['voluntario', 'encargado', 'superadmin', 'owner']).optional(),
+  password: passwordSchema.optional(),
+});
 
 export async function onRequest(context: any) {
   const request: Request = context.request;
@@ -27,10 +64,22 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'create') {
-      const body = await request.json() as CreateUserRequest;
-      if (!body.username || !body.password || !body.role) {
-        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
+
+      const parseResult = CreateUserSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
 
       if (body.role === 'superadmin' && actorRole !== 'owner') {
         return new Response(JSON.stringify({ 
@@ -89,8 +138,22 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'update') {
-      const body = await request.json() as { username: string; role?: UserRole; password?: string };
-      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const parseResult = UpdateUserSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
 
       const target = await getUser(body.username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
@@ -145,9 +208,23 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'reset-password') {
-      const body = await request.json() as ResetPasswordRequest;
-      const targetUser = body.username || body.target_username;
-      if (!targetUser || !body.new_password) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const parseResult = ResetPasswordSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
+      const targetUser = (body.username || body.target_username)!;
 
       const target = await getUser(targetUser, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
@@ -183,8 +260,22 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'change-password') {
-      const body = await request.json() as { current_password?: string; new_password?: string };
-      if (!body.current_password || !body.new_password) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const parseResult = ChangePasswordSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
 
       const target = await getUser(payload.sub, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
