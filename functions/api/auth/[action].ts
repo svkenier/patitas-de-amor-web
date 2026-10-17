@@ -119,19 +119,6 @@ async function handleLogout(request: Request, env: Env) {
 }
 
 async function handleVerify(request: Request, env: Env) {
-  try {
-    await ensureSeeder(env);
-  } catch (err) {
-    if (err && (err as any).name === 'ConfigurationError') {
-      console.error('[Auth Config Error in verify]:', err);
-      return new Response(JSON.stringify({
-        ok: false,
-        error: 'Error en la configuración del servicio de autenticación'
-      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-    }
-    console.error('ensureSeeder error:', err);
-  }
-  
   const payload = await getAuthPayload(request, env);
   if (!payload) {
     return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401, headers: { 'Content-Type': 'application/json' } });

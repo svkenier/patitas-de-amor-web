@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { BaseRecord } from '../types/record.js';
 
 // Límite de 3MB para cadenas Base64 (~2.2MB binario), evitando agotar memoria en Workers (128MB)
 const base64ImageSchema = z.string().max(3_000_000, 'La imagen excede el límite permitido');
@@ -40,3 +41,10 @@ export const SettingsSchema = z.object({
   email: z.string().max(150).optional(),
   metadata: z.record(z.string().max(100), safePrimitiveSchema).optional(),
 });
+
+export function isRecordPubliclyVisible(record: BaseRecord): boolean {
+  if (record.status === 'oculto' || (record as any).hidden === true) return false;
+  if (record.attributes?.['hidden'] === true) return false;
+  if (record.attributes?.['is_active'] === false) return false;
+  return true;
+}

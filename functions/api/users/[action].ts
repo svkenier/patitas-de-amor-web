@@ -1,5 +1,5 @@
 import { getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
-import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL } from '../../../src/core/auth/kv.js';
+import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL, isRootUser } from '../../../src/core/auth/kv.js';
 import { hashPassword, verifyPassword } from '../../../src/core/auth/crypto.js';
 import { canManage, canCreateRole, type CreateUserRequest, type ResetPasswordRequest, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
 
@@ -80,8 +80,8 @@ export async function onRequest(context: any) {
         });
       }
       
-      if (target.isProtected || (env.ADMIN_USERNAME && body.username === env.ADMIN_USERNAME)) {
-        return new Response(JSON.stringify({ error: 'Forbidden: Cannot delete a protected user' }), { status: 403 });
+      if (target.isProtected || isRootUser(target.username, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Cannot delete a protected user or root owner' }), { status: 403 });
       }
 
       await deleteUser(body.username, env);
@@ -94,9 +94,18 @@ export async function onRequest(context: any) {
 
       const target = await getUser(body.username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
-      
-      if ((target.isProtected || (env.ADMIN_USERNAME && body.username === env.ADMIN_USERNAME)) && body.role && body.role !== 'superadmin') {
+
+      const isRoot = isRootUser(target.username, env);
+      if (isRoot) {
+        if (body.role && body.role !== 'owner') {
+          return new Response(JSON.stringify({ error: 'Forbidden: La cuenta raíz del sistema no puede tener un rol distinto a owner.' }), { status: 403 });
+        }
+      } else if (target.isProtected && body.role && ROLE_LEVEL[body.role] < ROLE_LEVEL[target.role]) {
         return new Response(JSON.stringify({ error: 'Forbidden: Cannot downgrade a protected user' }), { status: 403 });
+      }
+
+      if (actorRole !== 'owner' && ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role] && payload.sub !== target.username) {
+        return new Response(JSON.stringify({ error: 'No tienes permisos para modificar a un usuario de igual o mayor jerarquía.' }), { status: 403 });
       }
 
       // Validación estricta para modificación de roles
@@ -144,7 +153,7 @@ export async function onRequest(context: any) {
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
       if (targetUser !== payload.sub) {
-        if (target.role === 'owner') {
+        if (target.role === 'owner' || isRootUser(target.username, env)) {
           return new Response(JSON.stringify({ error: 'Acceso denegado: la cuenta del propietario es inviolable.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
         if (ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role]) {

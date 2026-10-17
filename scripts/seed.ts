@@ -49,7 +49,7 @@ async function seedGithub() {
   try {
     const res = await getFileWithETag(PETS_JSON_PATH, env);
     if (!res.data && !res.notModified) {
-      await putFile(PETS_JSON_PATH, '[]', 'Initial commit for base database', env);
+      await putFile(PETS_JSON_PATH, { type: 'json', data: [] }, 'Initial commit for base database', env);
       console.log('[Seed GitHub]: Repositorio/archivo inicializado exitosamente.');
     } else {
       console.log('[Seed GitHub]: Archivo base detectado. Omitiendo sembrado.');

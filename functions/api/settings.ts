@@ -137,7 +137,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
     await putFile(
       SHELTER_INFO_PATH,
-      JSON.stringify(next, null, 2),
+      { type: 'json', data: next },
       'Update shelter settings',
       env,
       current.data?.sha,

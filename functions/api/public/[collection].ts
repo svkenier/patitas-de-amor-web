@@ -1,6 +1,7 @@
 import { getFileWithETag } from '../../../src/core/github/github.js';
 import { getPublicRateLimit, checkRateLimit } from '../../../src/core/auth/rate-limit.js';
 import type { Env } from '../../../src/core/auth/auth.js';
+import { isRecordPubliclyVisible } from '../../../src/core/schema/collections.js';
 
 const ALLOWED_COLLECTIONS = new Set(['pets', 'announcements']);
 
@@ -31,6 +32,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const headers = new Headers();
     headers.set('X-RateLimit-Limit', limitRes.limit.toString());
     headers.set('X-RateLimit-Remaining', limitRes.remaining.toString());
+    headers.set('Vary', 'Accept-Encoding, Cookie, Authorization');
     
     if (!limitRes.success) {
       return new Response(JSON.stringify({ error: 'Demasiadas peticiones. Intenta más tarde.' }), { status: 429, headers });
@@ -45,7 +47,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (ghRes.notModified) {
       // If we are authenticated, we cannot use a 304 if it was cached as public, but the browser cache handles it.
-      // Better to add Cache-Control here too.
       if (isAuthenticated) {
         headers.set('Cache-Control', 'private, no-cache, no-store');
       } else {
@@ -81,12 +82,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
     }
 
-    // Filtrar registros ocultos para usuarios NO autenticados
+    // Filtrar registros ocultos para usuarios NO autenticados mediante el predicado canónico
     if (!isAuthenticated) {
-      records = records.filter(r => {
-        const isHidden = r.status === 'oculto' || r.hidden === true || r.attributes?.hidden === true;
-        return !isHidden;
-      });
+      records = records.filter(isRecordPubliclyVisible);
     }
 
     return new Response(JSON.stringify(records), { status: 200, headers });

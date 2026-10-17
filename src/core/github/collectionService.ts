@@ -53,7 +53,7 @@ export async function upsertDocument<T extends { id: string }>(
     try {
       const readme = await getFile('README.md', env);
       if (!readme) {
-        await putFile('README.md', '# Storage Bank\n\nDatabase initialized.', 'Initialize repository', env);
+        await putFile('README.md', { type: 'text', content: '# Storage Bank\n\nDatabase initialized.' }, 'Initialize repository', env);
       }
     } catch (e) {
       console.warn('Failed to check/create README.md', e);
@@ -65,7 +65,7 @@ export async function upsertDocument<T extends { id: string }>(
 
   try {
     for (const img of newImages) {
-      await putFile(img.path, img.base64, `${isUpdate ? 'Update' : 'Add'} image for ${id}`, env);
+      await putFile(img.path, { type: 'base64', base64: img.base64 }, `${isUpdate ? 'Update' : 'Add'} image for ${id}`, env);
       uploadedImagePaths.push(img.path);
     }
 
@@ -79,7 +79,7 @@ export async function upsertDocument<T extends { id: string }>(
     const indFile = await getFile(individualJsonPath, env);
     await putFile(
       individualJsonPath,
-      JSON.stringify(document, null, 2),
+      { type: 'json', data: document },
       `${isUpdate ? 'Update' : 'Add'} individual JSON for ${id}`,
       env,
       indFile?.sha
@@ -118,10 +118,9 @@ export async function upsertDocument<T extends { id: string }>(
           currentArray = refreshedArray;
         }
 
-        const masterJsonStr = JSON.stringify(currentArray, null, 2);
         await putFile(
           masterJsonPath,
-          masterJsonStr,
+          { type: 'json', data: currentArray },
           `${isUpdate ? 'Update' : 'Add'} document ${id} in master JSON`,
           env,
           masterSha
@@ -201,10 +200,9 @@ export async function deleteDocument<T extends { id: string }>(
   const documentName = (array[index] as any).nombre || (array[index] as any).title || id;
   array.splice(index, 1);
 
-  const masterJsonStr = JSON.stringify(array, null, 2);
   await putFile(
     masterJsonPath,
-    masterJsonStr,
+    { type: 'json', data: array },
     `Delete document ${id}: ${documentName}`,
     env,
     masterFile.sha

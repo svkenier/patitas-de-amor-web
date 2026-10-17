@@ -167,19 +167,36 @@ export async function getFileWithETag(path: string, env: Env, ifNoneMatch?: stri
   };
 }
 
+export type FilePayload =
+  | { type: 'text'; content: string }
+  | { type: 'json'; data: unknown }
+  | { type: 'base64'; base64: string };
+
 export async function putFile(
   path: string,
-  content: string,
+  payload: FilePayload,
   message: string,
   env: Env,
   sha?: string,
 ): Promise<void> {
-  // Corrección para Base64 segura en Edge
-  let finalBase64 = content;
-  if (!isBase64(content)) {
-    const bytes = new TextEncoder().encode(content);
-    const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
-    finalBase64 = btoa(binString);
+  let finalBase64: string;
+
+  switch (payload.type) {
+    case 'json': {
+      const jsonStr = JSON.stringify(payload.data, null, 2);
+      const bytes = new TextEncoder().encode(jsonStr);
+      finalBase64 = btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(''));
+      break;
+    }
+    case 'text': {
+      const bytes = new TextEncoder().encode(payload.content);
+      finalBase64 = btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(''));
+      break;
+    }
+    case 'base64': {
+      finalBase64 = payload.base64.replace(/^data:[^;]+;base64,/, '').trim();
+      break;
+    }
   }
 
   await ghRequest('PUT', path, env, {
@@ -208,10 +225,6 @@ export const cdnImageUrl = (relativePath: string, env: Env) => {
   const cfg = getGhConfig(env);
   return `https://cdn.jsdelivr.net/gh/${cfg.GITHUB_OWNER}/${cfg.GITHUB_REPO}@${cfg.GITHUB_BRANCH}/${relativePath}`;
 };
-
-export function isBase64(str: string): boolean {
-  return /^[A-Za-z0-9+/]+=*$/.test(str.replace(/\s/g, ''));
-}
 
 export function generateItemId(): string {
   return `record-${Date.now()}`;

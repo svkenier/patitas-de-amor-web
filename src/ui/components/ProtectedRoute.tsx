@@ -36,8 +36,10 @@ export default function ProtectedRoute({
     if (!isAuthenticated) return;
 
     let intervalId: number | undefined;
+    let lastChecked = Date.now();
 
     const checkSession = async () => {
+      lastChecked = Date.now();
       try {
         await get('/auth/verify');
       } catch {
@@ -45,10 +47,18 @@ export default function ProtectedRoute({
       }
     };
 
+    const checkSessionThrottled = () => {
+      const now = Date.now();
+      // Throttle de 60 segundos
+      if (now - lastChecked >= 60000) {
+        void checkSession();
+      }
+    };
+
     const startPolling = () => {
       if (intervalId) clearInterval(intervalId);
-      // Latido cada 20 segundos para respuesta pasiva
-      intervalId = window.setInterval(checkSession, 20000);
+      // Latido pasivo cada 180 segundos
+      intervalId = window.setInterval(checkSession, 180000);
     };
 
     const stopPolling = () => {
@@ -58,19 +68,25 @@ export default function ProtectedRoute({
       }
     };
 
-    // Revisión inmediata al recuperar el foco de la pestaña
+    // Revisión al recuperar el foco de la pestaña con throttle de 60s
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        checkSession();
+        checkSessionThrottled();
         startPolling();
       } else {
         stopPolling();
       }
     };
 
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        checkSessionThrottled();
+      }
+    };
+
     // Para navegadores móviles (iOS Safari, Android)
     const handlePageShow = () => {
-      checkSession();
+      checkSessionThrottled();
       startPolling();
     };
     
@@ -79,18 +95,20 @@ export default function ProtectedRoute({
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
     window.addEventListener('pageshow', handlePageShow);
     window.addEventListener('pagehide', handlePageHide);
 
     // Verificación inicial
     if (document.visibilityState === 'visible') {
-      checkSession();
+      void checkSession();
       startPolling();
     }
 
     return () => {
       stopPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('pageshow', handlePageShow);
       window.removeEventListener('pagehide', handlePageHide);
     };

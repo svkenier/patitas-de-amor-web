@@ -6,8 +6,8 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wrangler pages dev public --port 8788 --compatibility-flags=nodejs_compat\"",
-    "prebuild": "tsx scripts/seed.ts",
     "build": "tsc -b && vite build",
+    "seed": "tsx scripts/seed.ts",
     "lint": "oxlint",
     "test": "oxlint && tsc --noEmit",
     "preview": "vite preview",
