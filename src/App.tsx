@@ -15,6 +15,7 @@ import { AuthProvider } from '@ui/context/AuthContext';
 import ProtectedRoute from '@ui/components/ProtectedRoute';
 import ScrollToTop from '@ui/components/ScrollToTop';
 import ConfigErrorBanner from '@ui/components/ConfigErrorBanner';
+import { RouteErrorBoundary } from '@ui/components/ErrorBoundary';
 
 // ─── Lazy-loading de páginas (code splitting automático por Vite) ──────────────
 import Home from '@ui/pages/public/Home';
@@ -57,29 +58,31 @@ export default function App() {
         <ScrollToTop />
         <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <ConfigErrorBanner />
-          <Routes>
-            {/* Rutas públicas */}
-            <Route path="/"           element={<Home />} />
-            <Route path="/mascotas"   element={<PetsPage />} />
-            <Route path="/mascotas/:id" element={<PetDetailPage />} />
-            <Route path="/requisitos" element={<Requirements />} />
-            <Route path="/terminos"   element={<Terms />} />
-            <Route path="/privacidad" element={<Privacy />} />
-            <Route path="/login"      element={<Login />} />
+          <RouteErrorBoundary>
+            <Routes>
+              {/* Rutas públicas */}
+              <Route path="/"           element={<Home />} />
+              <Route path="/mascotas"   element={<PetsPage />} />
+              <Route path="/mascotas/:id" element={<PetDetailPage />} />
+              <Route path="/requisitos" element={<Requirements />} />
+              <Route path="/terminos"   element={<Terms />} />
+              <Route path="/privacidad" element={<Privacy />} />
+              <Route path="/login"      element={<Login />} />
 
-            {/* Ruta protegida — acceso mínimo: voluntario */}
-            <Route
-              path="/admin/*"
-              element={
-                <ProtectedRoute minRole="voluntario">
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
+              {/* Ruta protegida — acceso mínimo: voluntario */}
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute minRole="voluntario">
+                    <Admin />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Catch-all → 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Catch-all → 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RouteErrorBoundary>
         </Box>
       </Suspense>
     </AuthProvider>

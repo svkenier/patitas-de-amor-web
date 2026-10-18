@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { HelmetProvider } from 'react-helmet-async';
+import { ErrorBoundary, FullPageErrorFallback } from '@ui/components/ErrorBoundary';
 import theme from '@ui/theme/theme';
 import App from './App';
 
@@ -28,7 +29,9 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <App />
+            <ErrorBoundary FallbackComponent={FullPageErrorFallback}>
+              <App />
+            </ErrorBoundary>
           </ThemeProvider>
         </BrowserRouter>
       </HelmetProvider>

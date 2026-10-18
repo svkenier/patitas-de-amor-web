@@ -6,7 +6,8 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   test: {
-    include: ['tests/**/*.test.ts', 'src/**/*.test.ts']
+    environment: 'happy-dom',
+    include: ['tests/**/*.test.ts', 'tests/**/*.spec.tsx', 'src/**/*.test.ts']
   },
   plugins: [react()],
   resolve: {
