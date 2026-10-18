@@ -28,7 +28,7 @@ test.describe('Pipeline de Imágenes (Cliente)', () => {
       const OUTPUT_FORMAT = 'image/webp';
       
       const optimizeImageMock = (fileToOptimize: File): Promise<any> => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const objectUrl = URL.createObjectURL(fileToOptimize);
           const img = new Image();
           img.onload = () => {

@@ -1,4 +1,4 @@
-import { useMemo, useState, useDeferredValue, useEffect } from 'react';
+import { useMemo, useState, useDeferredValue } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -44,11 +44,13 @@ const INITIAL_FILTERS: RecordFilters = {
 
 export default function PetsPage() {
   const [filters, setFilters] = useState<RecordFilters>(INITIAL_FILTERS);
+  const [prevFilters, setPrevFilters] = useState(filters);
   const [visibleCount, setVisibleCount] = useState(8);
 
-  useEffect(() => {
+  if (filters !== prevFilters) {
+    setPrevFilters(filters);
     setVisibleCount(8);
-  }, [filters]);
+  }
 
   const { data, isLoading, isError, error, refetch } = useQuery<{ records: BaseRecord[]; total: number }>({
     queryKey: ['pets-index'],

@@ -123,7 +123,7 @@ test.describe('Invalidación de Sesiones Globales y Seguridad', () => {
     }
   }
 
-  test.beforeEach(async ({ playwright, request }) => {
+  test.beforeEach(async ({ request }) => {
     testUser = `testuser_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
     const adminToken = await getAdminToken();

@@ -76,8 +76,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 };
 
 async function handleUpsert(request: Request, env: Env, paths: any, isUpdate: boolean) {
+  let rawBody: unknown;
   try {
-    const rawBody = await request.json();
+    rawBody = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Cuerpo de petición JSON inválido' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
     const validationResult = RecordUpsertSchema.safeParse(rawBody);
     
     if (!validationResult.success) {
@@ -159,13 +168,23 @@ async function handleUpsert(request: Request, env: Env, paths: any, isUpdate: bo
 }
 
 async function handleDelete(request: Request, env: Env, paths: any) {
+  let rawBody: unknown;
   try {
-    const { id } = await request.json() as RecordDeleteBody;
-    if (!id) return new Response(JSON.stringify({ error: 'El campo id es requerido' }), { status: 400 });
+    rawBody = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Cuerpo de petición JSON inválido' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
+  const { id } = (rawBody as RecordDeleteBody) || {};
+  if (!id) return new Response(JSON.stringify({ error: 'El campo id es requerido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  try {
     const collection = await getCollection<BaseRecord>(paths.master, env);
     const record = collection.find(p => p.id === id);
-    if (!record) return new Response(JSON.stringify({ error: 'Registro no encontrado' }), { status: 404 });
+    if (!record) return new Response(JSON.stringify({ error: 'Registro no encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
 
     const imagesToDelete: string[] = [];
     if (record.main_image) imagesToDelete.push(record.main_image);
