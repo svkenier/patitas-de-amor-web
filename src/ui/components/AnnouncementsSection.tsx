@@ -239,8 +239,6 @@ export default function AnnouncementsSection() {
       const data = await get<any>('/public/announcements');
       return Array.isArray(data) ? data : (data?.announcements || []);
     },
-    staleTime: 0,
-    refetchOnMount: 'always',
   });
 
   const activeAnnouncements = announcements?.filter(a => 

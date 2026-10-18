@@ -10,7 +10,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import { AuthProvider } from '@ui/context/AuthContext';
 import ProtectedRoute from '@ui/components/ProtectedRoute';
 import ScrollToTop from '@ui/components/ScrollToTop';
@@ -28,19 +28,24 @@ const Admin        = lazy(() => import('@ui/pages/admin/Admin'));
 const NotFound     = lazy(() => import('@ui/pages/utility/NotFound'));
 
 // ─── Fallback de carga ───────────────────────────────────────────────────────
-function PageLoader() {
+function TopProgressBar() {
   return (
-    <Box
+    <LinearProgress
+      color="primary"
       sx={{
-        minHeight:      '100vh',
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'center',
-        bgcolor:        'background.default',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '3px',
+        zIndex: 9999,
+        bgcolor: 'transparent',
+        '& .MuiLinearProgress-bar': {
+          background: 'linear-gradient(90deg, #65C620, #84E036)',
+        },
       }}
-    >
-      <CircularProgress color="primary" />
-    </Box>
+      aria-label="Cargando contenido..."
+    />
   );
 }
 
@@ -48,7 +53,7 @@ function PageLoader() {
 export default function App() {
   return (
     <AuthProvider>
-      <Suspense fallback={<PageLoader />}>
+      <Suspense fallback={<TopProgressBar />}>
         <ScrollToTop />
         <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <ConfigErrorBanner />

@@ -69,7 +69,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
@@ -87,31 +86,80 @@
           margin: 0;
           padding: 0;
           background-color: #FAFAF8;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        .initial-loader-container {
+        .app-shell-topbar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2.5px;
+          background: linear-gradient(90deg, #65C620, #84E036, #65C620);
+          background-size: 200% 100%;
+          z-index: 10000;
+          transform-origin: 0% 50%;
+          animation: app-shell-progress 1.4s ease-in-out infinite;
+        }
+        @keyframes app-shell-progress {
+          0% { transform: scaleX(0.08) translateX(-10%); }
+          50% { transform: scaleX(0.65) translateX(30%); }
+          100% { transform: scaleX(1) translateX(100%); }
+        }
+        .app-shell-nav {
+          height: 64px;
+          background-color: #FFFFFF;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
           display: flex;
           align-items: center;
-          justify-content: center;
-          height: 100vh;
-          width: 100vw;
-          background-color: #FAFAF8;
+          justify-content: space-between;
+          padding: 0 24px;
+          box-sizing: border-box;
         }
-        .initial-loader-spinner {
-          width: 50px;
-          height: 50px;
-          border: 4px solid rgba(101, 198, 32, 0.2);
-          border-left-color: #65C620;
+        .app-shell-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .app-shell-logo {
+          width: 38px;
+          height: 38px;
           border-radius: 50%;
-          animation: initial-loader-spin 1s linear infinite;
+          background: #EEF8E8;
         }
-        @keyframes initial-loader-spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        .app-shell-title {
+          width: 140px;
+          height: 18px;
+          border-radius: 4px;
+          background: #E2E8F0;
+        }
+        .app-shell-actions {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .app-shell-btn {
+          width: 80px;
+          height: 34px;
+          border-radius: 9999px;
+          background: #F1F5F9;
+        }
+        @media (max-width: 600px) {
+          .app-shell-nav {
+            height: 56px;
+            padding: 0 16px;
+          }
         }
       </style>
-      <div class="initial-loader-container">
-        <div class="initial-loader-spinner"></div>
-      </div>
+      <div class="app-shell-topbar" aria-hidden="true"></div>
+      <header class="app-shell-nav" aria-hidden="true">
+        <div class="app-shell-brand">
+          <div class="app-shell-logo"></div>
+          <div class="app-shell-title"></div>
+        </div>
+        <div class="app-shell-actions">
+          <div class="app-shell-btn"></div>
+        </div>
+      </header>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
