@@ -20,7 +20,7 @@ export const onRequest: PagesFunction = async (context) => {
     newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     newHeaders.set(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com https://raw.githubusercontent.com https://cdn.jsdelivr.net https://images.weserv.nl; connect-src 'self' https://*.upstash.io https://api.github.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://res.cloudinary.com https://raw.githubusercontent.com https://cdn.jsdelivr.net https://images.weserv.nl; connect-src 'self' https://*.upstash.io https://api.github.com https://cdn.jsdelivr.net; frame-src 'self' https://maps.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
     );
     newHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
     newHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
