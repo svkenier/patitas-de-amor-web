@@ -33,9 +33,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          'mui-core': ['@mui/material', '@emotion/react', '@emotion/styled'],
+          'mui-icons': ['@mui/icons-material'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
-          'utils-vendor': ['dayjs', 'yup', 'formik', 'embla-carousel-react']
+          'forms-vendor': ['formik', 'yup'],
+          'utils-vendor': ['dayjs', 'embla-carousel-react']
         }
       }
     }

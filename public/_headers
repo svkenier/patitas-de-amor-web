@@ -2,9 +2,9 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=(), screen-wake-lock=()
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://cdn.jsdelivr.net blob:; connect-src 'self' https://cdn.jsdelivr.net; frame-ancestors 'self'; object-src 'none'; base-uri 'self';
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://raw.githubusercontent.com https://cdn.jsdelivr.net https://images.weserv.nl; connect-src 'self' https://*.upstash.io https://api.github.com https://cdn.jsdelivr.net; frame-ancestors 'self'; object-src 'none'; base-uri 'self';
 
 # Cache inmutable de 1 año para assets estáticos versionados
 /assets/*
