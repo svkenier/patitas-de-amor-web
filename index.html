@@ -143,10 +143,83 @@
           border-radius: 9999px;
           background: #F1F5F9;
         }
+        .app-shell-hero {
+          position: relative;
+          min-height: calc(100vh - 64px);
+          background-color: #0F172A;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          overflow: hidden;
+        }
+        .app-shell-picture {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 0;
+        }
+        .app-shell-picture img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: right 77%;
+          display: block;
+        }
+        .app-shell-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, rgba(15,23,42,0.90) 0%, rgba(15,23,42,0.65) 45%, rgba(15,23,42,0.15) 75%, transparent 100%);
+          z-index: 1;
+        }
+        .app-shell-content {
+          position: relative;
+          z-index: 2;
+          padding: 0 24px;
+          max-width: 650px;
+          box-sizing: border-box;
+        }
+        .app-shell-badge {
+          width: 220px;
+          height: 32px;
+          border-radius: 9999px;
+          background: rgba(53, 180, 221, 0.22);
+          margin-bottom: 24px;
+          border: 1px solid rgba(53, 180, 221, 0.4);
+        }
+        .app-shell-h1 {
+          width: 90%;
+          height: 56px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.15);
+          margin-bottom: 16px;
+        }
+        .app-shell-p {
+          width: 75%;
+          height: 24px;
+          border-radius: 6px;
+          background: rgba(255, 255, 255, 0.10);
+          margin-bottom: 32px;
+        }
         @media (max-width: 600px) {
           .app-shell-nav {
             height: 56px;
             padding: 0 16px;
+          }
+          .app-shell-hero {
+            min-height: calc(100dvh - 56px);
+            justify-content: flex-start;
+            padding-top: 24px;
+          }
+          .app-shell-picture img {
+            object-position: center bottom;
+          }
+          .app-shell-overlay {
+            background: linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.70) 50%, rgba(15,23,42,0.10) 75%, transparent 100%);
           }
         }
       </style>
@@ -160,6 +233,18 @@
           <div class="app-shell-btn"></div>
         </div>
       </header>
+      <section class="app-shell-hero" aria-hidden="true">
+        <picture class="app-shell-picture">
+          <source media="(min-width: 900px)" srcset="/hero-desktop.webp?v=17" width="1920" height="1080">
+          <img src="/hero-mobile.webp?v=17" alt="" fetchpriority="high" loading="eager" decoding="sync" width="800" height="1200">
+        </picture>
+        <div class="app-shell-overlay"></div>
+        <div class="app-shell-content">
+          <div class="app-shell-badge"></div>
+          <div class="app-shell-h1"></div>
+          <div class="app-shell-p"></div>
+        </div>
+      </section>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
