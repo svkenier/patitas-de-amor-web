@@ -1,5 +1,5 @@
 import { getAuthRateLimit, checkRateLimit } from '../../../src/core/auth/rate-limit.js';
-import { signToken, verifyToken, getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
+import { signToken, getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
 import { getUser, updateLastLogin, activateTTL, cancelTTL, listUsers, setUser, updateUserPreservingTTL } from '../../../src/core/auth/kv.js';
 import { verifyPassword, hashPassword } from '../../../src/core/auth/crypto.js';
 
@@ -21,11 +21,10 @@ async function handleLogin(request: Request, env: Env) {
     await ensureSeeder(env);
   } catch (err) {
     if (err && (err as any).name === 'ConfigurationError') {
+      console.error('[Auth Config Error in login]:', err);
       return new Response(JSON.stringify({
         ok: false,
-        errorType: 'CONFIGURATION_ERROR',
-        provider: (err as any).provider,
-        message: (err as Error).message
+        error: 'Error en la configuración del servicio de autenticación'
       }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
     console.error('ensureSeeder error:', err);
@@ -48,6 +47,15 @@ async function handleLogin(request: Request, env: Env) {
     }
 
     const usernameClean = String(username).trim().toLowerCase();
+    if (usernameClean) {
+      const userLimitRes = await checkRateLimit(getAuthRateLimit(env), `auth:account:${usernameClean}`);
+      if (!userLimitRes.success) {
+        return new Response(JSON.stringify({ error: 'Demasiados intentos para esta cuenta. Intenta más tarde.' }), { 
+          status: 429, 
+          headers: { 'Content-Type': 'application/json', 'X-RateLimit-Limit': userLimitRes.limit.toString(), 'X-RateLimit-Remaining': userLimitRes.remaining.toString() } 
+        });
+      }
+    }
     let user = await getUser(usernameClean, env) as any;
     
     if (typeof user === 'string') {
@@ -86,11 +94,7 @@ async function handleLogin(request: Request, env: Env) {
     const token = signToken(user.username, user.role, user.tokenVersion ?? 1, env);
     await updateLastLogin(user.username, env);
     
-    if (user.isProtected || user.role === 'owner' || (env.ADMIN_USER && usernameClean === env.ADMIN_USER.toLowerCase())) {
-      await cancelTTL(user.username, env);
-    } else {
-      await activateTTL(user.username, env);
-    }
+    await cancelTTL(user.username, env);
 
     const headers = new Headers();
     headers.set('Content-Type', 'application/json');
@@ -120,20 +124,6 @@ async function handleLogout(request: Request, env: Env) {
 }
 
 async function handleVerify(request: Request, env: Env) {
-  try {
-    await ensureSeeder(env);
-  } catch (err) {
-    if (err && (err as any).name === 'ConfigurationError') {
-      return new Response(JSON.stringify({
-        ok: false,
-        errorType: 'CONFIGURATION_ERROR',
-        provider: (err as any).provider,
-        message: (err as Error).message
-      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-    }
-    console.error('ensureSeeder error:', err);
-  }
-  
   const payload = await getAuthPayload(request, env);
   if (!payload) {
     return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401, headers: { 'Content-Type': 'application/json' } });

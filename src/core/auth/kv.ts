@@ -13,8 +13,13 @@
  */
 
 import { Redis } from '@upstash/redis/cloudflare';
-import type { KVUser, PublicUser, UserRole } from '../types/user.js';
+import { ROLE_LEVEL, type KVUser, type PublicUser, type UserRole } from '../types/user.js';
 import type { Env } from './auth.js';
+
+export function isRootUser(username: string, env: Env): boolean {
+  const root = (env.ADMIN_USER ?? '').replace(/^"|"$/g, '').trim().toLowerCase();
+  return Boolean(root && username.trim().toLowerCase() === root);
+}
 
 export class ConfigurationError extends Error {
   constructor(public provider: 'GitHub' | 'Upstash', message: string) {
@@ -27,8 +32,7 @@ export const TTL_30_DAYS = 30 * 24 * 60 * 60; // 2,592,000 segundos
 export const TTL_6_MONTHS = 180 * 24 * 60 * 60; // 15,552,000 segundos
 
 export function getRoleTTL(role: UserRole): number | null {
-  if (role === 'owner') return null;
-  if (role === 'superadmin') return TTL_6_MONTHS;
+  if (role === 'owner' || role === 'superadmin') return null;
   return TTL_30_DAYS;
 }
 
@@ -58,7 +62,7 @@ export async function setUser(user: KVUser, env: Env, ttl?: number): Promise<voi
   const redis = getRedis(env);
   let finalTtl = ttl;
   
-  if (finalTtl === undefined && !user.isProtected && user.role !== 'owner') {
+  if (finalTtl === undefined && !user.isProtected && user.role !== 'owner' && user.role !== 'superadmin') {
     const roleTtl = getRoleTTL(user.role);
     if (roleTtl !== null) {
       finalTtl = roleTtl;
@@ -75,7 +79,7 @@ export async function setUser(user: KVUser, env: Env, ttl?: number): Promise<voi
 
 export async function deleteUser(username: string, env: Env): Promise<void> {
   const user = await getUser(username, env);
-  if (user?.isProtected || (env.ADMIN_USER && username === env.ADMIN_USER)) {
+  if (user?.isProtected || isRootUser(username, env)) {
     throw new Error('Forbidden: Cannot delete a protected user or the root superadmin.');
   }
 
@@ -88,8 +92,15 @@ export async function updateUserPreservingTTL(username: string, updates: Partial
   const user = await getUser(username, env);
   if (!user) return;
 
-  if ((user.isProtected || (env.ADMIN_USER && username === env.ADMIN_USER)) && updates.role && updates.role !== 'superadmin') {
-    throw new Error('Forbidden: Cannot downgrade a protected user or the root superadmin.');
+  const isRoot = isRootUser(username, env);
+  const isProtected = user.isProtected || isRoot;
+  if (isProtected && updates.role) {
+    if (isRoot && updates.role !== 'owner') {
+      throw new Error('Forbidden: La cuenta raíz del sistema no puede tener un rol distinto a owner.');
+    }
+    if (!isRoot && ROLE_LEVEL[updates.role] < ROLE_LEVEL[user.role]) {
+      throw new Error('Forbidden: No se permite degradar el rol de un usuario protegido.');
+    }
   }
 
   const redis = getRedis(env);
@@ -104,7 +115,7 @@ export async function updateUserPreservingTTL(username: string, updates: Partial
 
 export async function activateTTL(username: string, env: Env, durationSeconds?: number): Promise<void> {
   const user = await getUser(username, env);
-  if (!user || user.isProtected || (env.ADMIN_USER && username === env.ADMIN_USER) || user.role === 'owner') return;
+  if (!user || user.isProtected || isRootUser(username, env) || user.role === 'owner' || user.role === 'superadmin') return;
 
   const finalDuration = durationSeconds ?? getRoleTTL(user.role);
   if (finalDuration !== null) {

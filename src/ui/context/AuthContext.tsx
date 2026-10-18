@@ -29,6 +29,7 @@ interface AuthStateWithoutToken {
 interface AuthContextValue extends AuthStateWithoutToken {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
+  syncUser: (user: PublicUser) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -56,6 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   }, []);
 
+  // Sync: sincroniza usuario fresco desde /auth/verify
+  const syncUser = useCallback((freshUser: PublicUser): void => {
+    localStorage.setItem(USER_KEY, JSON.stringify(freshUser));
+    setUser(freshUser);
+  }, []);
+
   // Logout: activa TTL de 30 días en KV, luego limpia sesión local
   const logout = useCallback(async (): Promise<void> => {
     try {
@@ -76,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: Boolean(user),
         login,
         logout,
+        syncUser,
       }}
     >
       {children}

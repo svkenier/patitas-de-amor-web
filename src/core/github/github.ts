@@ -34,7 +34,8 @@ function getGhConfig(env: Env) {
   };
 }
 
-const GH_BASE = (env: Env) => `https://api.github.com/repos/${getGhConfig(env).GITHUB_OWNER}/${getGhConfig(env).GITHUB_REPO}/contents`;
+const GH_REPO_BASE = (env: Env) => `https://api.github.com/repos/${getGhConfig(env).GITHUB_OWNER}/${getGhConfig(env).GITHUB_REPO}`;
+const GH_BASE = (env: Env) => `${GH_REPO_BASE(env)}/contents`;
 
 const GH_HEADERS = (env: Env) => ({
   'Authorization':       `token ${getGhConfig(env).GITHUB_TOKEN}`,
@@ -53,6 +54,20 @@ export interface GHFileInfo {
   path:    string;
 }
 
+export interface TreeItem {
+  path: string;
+  mode: '100644' | '100755' | '040000' | '160000' | '120000';
+  type: 'blob' | 'tree' | 'commit';
+  sha?: string | null;
+  content?: string;
+}
+
+export interface CommitTreeParams {
+  branch?: string;
+  message: string;
+  entries: TreeItem[];
+}
+
 export class ConfigurationError extends Error {
   constructor(public provider: 'GitHub' | 'Upstash', message: string) {
     super(message);
@@ -60,22 +75,23 @@ export class ConfigurationError extends Error {
   }
 }
 
-// ─── Helper genérico de petición ─────────────────────────────────────────────
+// ─── Helpers genéricos de petición ─────────────────────────────────────────────
 
-async function ghRequest<T = unknown>(
+async function ghRepoRequest<T = unknown>(
   method: string,
-  path: string,
+  endpoint: string,
   env: Env,
   body?: Record<string, unknown>,
 ): Promise<T> {
-  const response = await fetch(`${GH_BASE(env)}/${path}`, {
+  const url = `${GH_REPO_BASE(env)}/${endpoint.replace(/^\//, '')}`;
+  const response = await fetch(url, {
     method,
     headers: GH_HEADERS(env),
     body: body ? JSON.stringify(body) : undefined,
   });
 
   const cfg = getGhConfig(env);
-  console.log(`[GitHub API] Request: ${method} ${cfg.GITHUB_OWNER}/${cfg.GITHUB_REPO} -> /${path} (Status: ${response.status})`);
+  console.log(`[GitHub API] Request: ${method} ${cfg.GITHUB_OWNER}/${cfg.GITHUB_REPO} -> /${endpoint} (Status: ${response.status})`);
 
   if (response.status === 204) return undefined as T;
 
@@ -93,10 +109,119 @@ async function ghRequest<T = unknown>(
       console.error(`[GitHub Config Error]: ${errorMsg}`);
       throw new ConfigurationError('GitHub', `Token inválido o sin permisos: ${errorMsg}`);
     }
-    throw new Error(errorMsg);
+    const err = new Error(errorMsg) as any;
+    err.status = response.status;
+    err.response = json;
+    throw err;
   }
 
   return json as T;
+}
+
+async function ghRequest<T = unknown>(
+  method: string,
+  path: string,
+  env: Env,
+  body?: Record<string, unknown>,
+): Promise<T> {
+  return ghRepoRequest<T>(method, `contents/${path}`, env, body);
+}
+
+// ─── Git Trees API (Persistencia Atómica en Git) ───────────────────────────────
+
+export async function createBlob(
+  content: string,
+  encoding: 'base64' | 'utf-8',
+  env: Env,
+): Promise<string> {
+  const res = await ghRepoRequest<{ sha: string }>('POST', 'git/blobs', env, {
+    content,
+    encoding,
+  });
+  return res.sha;
+}
+
+export async function getRefHead(
+  branch: string,
+  env: Env,
+): Promise<{ commitSha: string; treeSha: string }> {
+  const ref = await ghRepoRequest<{ object: { sha: string } }>(
+    'GET',
+    `git/refs/heads/${branch}`,
+    env,
+  );
+  const commitSha = ref.object.sha;
+  const commit = await ghRepoRequest<{ tree: { sha: string } }>(
+    'GET',
+    `git/commits/${commitSha}`,
+    env,
+  );
+  return { commitSha, treeSha: commit.tree.sha };
+}
+
+export async function createTree(
+  baseTreeSha: string,
+  tree: TreeItem[],
+  env: Env,
+): Promise<string> {
+  const res = await ghRepoRequest<{ sha: string }>('POST', 'git/trees', env, {
+    base_tree: baseTreeSha,
+    tree,
+  });
+  return res.sha;
+}
+
+export async function createCommit(
+  message: string,
+  treeSha: string,
+  parents: string[],
+  env: Env,
+): Promise<string> {
+  const res = await ghRepoRequest<{ sha: string }>('POST', 'git/commits', env, {
+    message,
+    tree: treeSha,
+    parents,
+  });
+  return res.sha;
+}
+
+export async function updateRef(
+  branch: string,
+  commitSha: string,
+  env: Env,
+): Promise<void> {
+  await ghRepoRequest('PATCH', `git/refs/heads/${branch}`, env, {
+    sha: commitSha,
+    force: false,
+  });
+}
+
+export async function commitGitTree(
+  params: CommitTreeParams,
+  env: Env,
+): Promise<{ commitSha: string }> {
+  const branch = params.branch || getGhConfig(env).GITHUB_BRANCH;
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const { commitSha, treeSha } = await getRefHead(branch, env);
+      const newTreeSha = await createTree(treeSha, params.entries, env);
+      const newCommitSha = await createCommit(params.message, newTreeSha, [commitSha], env);
+      await updateRef(branch, newCommitSha, env);
+      return { commitSha: newCommitSha };
+    } catch (err: any) {
+      const isConflict = err?.status === 422 || /422|conflict|fast-forward/i.test(err?.message ?? '');
+      if (isConflict && attempt < MAX_RETRIES - 1) {
+        const delayMs = 300 * Math.pow(2, attempt) + Math.floor(Math.random() * 100);
+        console.warn(`[Git Tree 422 Conflict]: Intento ${attempt + 1}/${MAX_RETRIES} para rama ${branch}. Reintentando en ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`Failed to commit git tree after ${MAX_RETRIES} attempts`);
 }
 
 // ─── Operaciones de archivo ───────────────────────────────────────────────────
@@ -167,19 +292,34 @@ export async function getFileWithETag(path: string, env: Env, ifNoneMatch?: stri
   };
 }
 
+export type FilePayload =
+  | { type: 'text'; content: string }
+  | { type: 'json'; data: unknown }
+  | { type: 'base64'; base64: string };
+
 export async function putFile(
   path: string,
-  content: string,
+  payload: FilePayload,
   message: string,
   env: Env,
   sha?: string,
 ): Promise<void> {
-  // Corrección para Base64 segura en Edge
-  let finalBase64 = content;
-  if (!isBase64(content)) {
-    const bytes = new TextEncoder().encode(content);
-    const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
-    finalBase64 = btoa(binString);
+  let finalBase64: string;
+
+  switch (payload.type) {
+    case 'json': {
+      const jsonStr = JSON.stringify(payload.data, null, 2);
+      finalBase64 = Buffer.from(jsonStr, 'utf-8').toString('base64');
+      break;
+    }
+    case 'text': {
+      finalBase64 = Buffer.from(payload.content, 'utf-8').toString('base64');
+      break;
+    }
+    case 'base64': {
+      finalBase64 = payload.base64.replace(/^data:[^;]+;base64,/, '').trim();
+      break;
+    }
   }
 
   await ghRequest('PUT', path, env, {
@@ -208,10 +348,6 @@ export const cdnImageUrl = (relativePath: string, env: Env) => {
   const cfg = getGhConfig(env);
   return `https://cdn.jsdelivr.net/gh/${cfg.GITHUB_OWNER}/${cfg.GITHUB_REPO}@${cfg.GITHUB_BRANCH}/${relativePath}`;
 };
-
-export function isBase64(str: string): boolean {
-  return /^[A-Za-z0-9+/]+=*$/.test(str.replace(/\s/g, ''));
-}
 
 export function generateItemId(): string {
   return `record-${Date.now()}`;

@@ -236,7 +236,7 @@ export default function AnnouncementsSection() {
   const { data: announcements, isLoading, isError, error } = useQuery<BaseRecord[]>({
     queryKey: ['announcements-public'],
     queryFn: async () => {
-      const data = await get<any>(`/public/announcements?t=${Date.now()}`);
+      const data = await get<any>('/public/announcements');
       return Array.isArray(data) ? data : (data?.announcements || []);
     },
     staleTime: 0,
@@ -267,20 +267,25 @@ export default function AnnouncementsSection() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
 
-  const onInit = useCallback((emblaApi: any) => {
-    setScrollSnaps(emblaApi.scrollSnapList());
-  }, []);
-
-  const onSelect = useCallback((emblaApi: any) => {
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, []);
-
   useEffect(() => {
     if (!emblaApi) return;
-    onInit(emblaApi);
-    onSelect(emblaApi);
-    emblaApi.on('reInit', onInit).on('reInit', onSelect).on('select', onSelect);
-  }, [emblaApi, onInit, onSelect]);
+
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+    };
+
+    const onInit = () => {
+      setScrollSnaps(emblaApi.scrollSnapList());
+      onSelect();
+    };
+
+    emblaApi.on('reInit', onInit).on('select', onSelect);
+    queueMicrotask(onInit);
+
+    return () => {
+      emblaApi.off('reInit', onInit).off('select', onSelect);
+    };
+  }, [emblaApi]);
 
   const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
 

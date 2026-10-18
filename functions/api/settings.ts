@@ -32,17 +32,29 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=86400');
     headers.set('Content-Type', 'application/json');
 
-    if (!ghRes.data) {
-      // Return empty object fallback (HTTP 200) instead of throwing an error when file doesn't exist.
-      return new Response(JSON.stringify({}), { status: 200, headers });
+    if (!ghRes.data || !ghRes.data.content) {
+      return new Response(JSON.stringify({ error: 'Servicio temporalmente no disponible' }), {
+        status: 503,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache',
+          'Retry-After': '30'
+        }
+      });
     }
 
-    const content = decodeURIComponent(escape(atob(ghRes.data.content)));
+    const content = Buffer.from(ghRes.data.content, 'base64').toString('utf-8');
     return new Response(content, { status: 200, headers });
   } catch (err) {
-    console.warn('[settings.ts] Error o repositorio vacío, devolviendo fallback vacío.', err);
-    // Devuelve objeto vacío con 200 OK para que el frontend no colapse
-    return new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    console.error('[settings.ts] Error conectando con GitHub API:', err);
+    return new Response(JSON.stringify({ error: 'Servicio temporalmente no disponible' }), {
+      status: 503,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache',
+        'Retry-After': '30'
+      }
+    });
   }
 };
 
@@ -61,7 +73,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   const payload = await getAuthPayload(request, env);
   if (!payload) return jsonResponse({ error: 'No autenticado' }, 401);
 
-  if (ROLE_LEVEL[payload.role as UserRole] < ROLE_LEVEL['encargado']) {
+  if (ROLE_LEVEL[payload.role as UserRole] < ROLE_LEVEL['superadmin']) {
     return jsonResponse({ error: 'No autorizado' }, 403);
   }
   const isOwner = payload.role === 'owner';
@@ -82,7 +94,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     let currentData: Record<string, unknown> = {};
     if (current.data && current.data.content) {
       try {
-        const parsed: unknown = JSON.parse(decodeURIComponent(escape(atob(current.data.content))));
+        const parsed: unknown = JSON.parse(Buffer.from(current.data.content, 'base64').toString('utf-8'));
         if (!isPlainObject(parsed)) throw new Error('El archivo de configuración no es un objeto JSON');
         currentData = parsed;
       } catch (e) {
@@ -137,7 +149,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
     await putFile(
       SHELTER_INFO_PATH,
-      JSON.stringify(next, null, 2),
+      { type: 'json', data: next },
       'Update shelter settings',
       env,
       current.data?.sha,

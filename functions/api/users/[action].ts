@@ -1,7 +1,44 @@
+import { z } from 'zod';
 import { getAuthPayload, type Env } from '../../../src/core/auth/auth.js';
-import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL } from '../../../src/core/auth/kv.js';
+import { listUsers, setUser, deleteUser, getUser, updateUserPreservingTTL, activateTTL, isRootUser } from '../../../src/core/auth/kv.js';
 import { hashPassword, verifyPassword } from '../../../src/core/auth/crypto.js';
-import { canManage, canCreateRole, type CreateUserRequest, type ResetPasswordRequest, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
+import { canManage, canCreateRole, type UserRole, ROLE_LEVEL } from '../../../src/core/types/user.js';
+import { getAuthRateLimit, checkRateLimit } from '../../../src/core/auth/rate-limit.js';
+
+const usernameSchema = z
+  .string()
+  .min(3, 'El nombre de usuario debe tener al menos 3 caracteres')
+  .max(30, 'El nombre de usuario no puede exceder 30 caracteres')
+  .regex(/^[a-z0-9_]+$/, 'El usuario solo puede contener letras minúsculas, números y guión bajo');
+
+const passwordSchema = z
+  .string()
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
+  .max(100, 'La contraseña no puede exceder 100 caracteres');
+
+const CreateUserSchema = z.object({
+  username: usernameSchema,
+  password: passwordSchema,
+  role: z.enum(['voluntario', 'encargado', 'superadmin', 'owner']),
+});
+
+const ChangePasswordSchema = z.object({
+  current_password: z.string().min(1, 'Contraseña actual requerida'),
+  new_password: passwordSchema,
+});
+
+const ResetPasswordSchema = z.object({
+  username: usernameSchema.optional(),
+  target_username: usernameSchema.optional(),
+  new_password: passwordSchema,
+}).refine((data) => Boolean(data.username || data.target_username), {
+  message: 'Debe especificarse el usuario objetivo',
+});
+
+const UpdateUserSchema = z.object({
+  username: usernameSchema,
+  role: z.enum(['voluntario', 'encargado', 'superadmin', 'owner']).optional(),
+});
 
 export async function onRequest(context: any) {
   const request: Request = context.request;
@@ -27,10 +64,22 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'create') {
-      const body = await request.json() as CreateUserRequest;
-      if (!body.username || !body.password || !body.role) {
-        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
+
+      const parseResult = CreateUserSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
 
       if (body.role === 'superadmin' && actorRole !== 'owner') {
         return new Response(JSON.stringify({ 
@@ -60,8 +109,17 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'DELETE' && action === 'delete') {
-      const body = await request.json() as { username: string };
-      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const body = rawBody as { username?: string };
+      if (!body || typeof body !== 'object' || !body.username) {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
 
       if (body.username === payload.sub) {
         return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes eliminarte a ti mismo.' }), { 
@@ -80,8 +138,8 @@ export async function onRequest(context: any) {
         });
       }
       
-      if (target.isProtected || (env.ADMIN_USERNAME && body.username === env.ADMIN_USERNAME)) {
-        return new Response(JSON.stringify({ error: 'Forbidden: Cannot delete a protected user' }), { status: 403 });
+      if (target.isProtected || isRootUser(target.username, env)) {
+        return new Response(JSON.stringify({ error: 'Forbidden: Cannot delete a protected user or root owner' }), { status: 403 });
       }
 
       await deleteUser(body.username, env);
@@ -89,14 +147,37 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'update') {
-      const body = await request.json() as { username: string; role?: UserRole; password?: string };
-      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const parseResult = UpdateUserSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
 
       const target = await getUser(body.username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
-      
-      if ((target.isProtected || (env.ADMIN_USERNAME && body.username === env.ADMIN_USERNAME)) && body.role && body.role !== 'superadmin') {
+
+      const isRoot = isRootUser(target.username, env);
+      if (isRoot) {
+        if (body.role && body.role !== 'owner') {
+          return new Response(JSON.stringify({ error: 'Forbidden: La cuenta raíz del sistema no puede tener un rol distinto a owner.' }), { status: 403 });
+        }
+      } else if (target.isProtected && body.role && ROLE_LEVEL[body.role] < ROLE_LEVEL[target.role]) {
         return new Response(JSON.stringify({ error: 'Forbidden: Cannot downgrade a protected user' }), { status: 403 });
+      }
+
+      if (actorRole !== 'owner' && ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role] && payload.sub !== target.username) {
+        return new Response(JSON.stringify({ error: 'No tienes permisos para modificar a un usuario de igual o mayor jerarquía.' }), { status: 403 });
       }
 
       // Validación estricta para modificación de roles
@@ -125,10 +206,11 @@ export async function onRequest(context: any) {
       }
 
       const updates: any = {};
-      if (body.role) updates.role = body.role;
-      if (body.password) {
-        updates.password_hash = await hashPassword(body.password.trim());
-        updates.tokenVersion = (target.tokenVersion || 1) + 1;
+      if (body.role) {
+        updates.role = body.role;
+        if (target.role !== body.role) {
+          updates.tokenVersion = (target.tokenVersion || 1) + 1;
+        }
       }
 
       await updateUserPreservingTTL(body.username, updates, env);
@@ -136,24 +218,53 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'reset-password') {
-      const body = await request.json() as ResetPasswordRequest;
-      const targetUser = body.username || body.target_username;
-      if (!targetUser || !body.new_password) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      const ip = request.headers.get('cf-connecting-ip') ?? '127.0.0.1';
+      const limitRes = await checkRateLimit(getAuthRateLimit(env), `reset-pw:${payload.sub}:${ip}`);
+      if (!limitRes.success) {
+        return new Response(JSON.stringify({ error: 'Demasiados intentos. Intenta más tarde.' }), { 
+          status: 429, 
+          headers: { 'Content-Type': 'application/json', 'X-RateLimit-Limit': limitRes.limit.toString(), 'X-RateLimit-Remaining': limitRes.remaining.toString() } 
+        });
+      }
+
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const parseResult = ResetPasswordSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
+      const targetUser = (body.username || body.target_username)!.trim().toLowerCase();
+
+      if (targetUser === payload.sub.toLowerCase()) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: para cambiar tu propia contraseña usa la opción de cambio de contraseña.' }), { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
 
       const target = await getUser(targetUser, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
-      if (targetUser !== payload.sub) {
-        if (target.role === 'owner') {
-          return new Response(JSON.stringify({ error: 'Acceso denegado: la cuenta del propietario es inviolable.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-        }
-        if (ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role]) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes modificar la contraseña de un usuario de igual o mayor jerarquía.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-        }
+      if (target.role === 'owner' || isRootUser(target.username, env)) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: la cuenta del propietario es inviolable.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (ROLE_LEVEL[actorRole] <= ROLE_LEVEL[target.role]) {
+        return new Response(JSON.stringify({ error: 'Acceso denegado: no puedes modificar la contraseña de un usuario de igual o mayor jerarquía.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
       }
 
       const hashed = await hashPassword(body.new_password.trim());
       await updateUserPreservingTTL(targetUser, { password_hash: hashed, tokenVersion: (target.tokenVersion || 1) + 1 }, env);
+      await activateTTL(targetUser, env);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
     
@@ -162,8 +273,17 @@ export async function onRequest(context: any) {
         return new Response(JSON.stringify({ error: 'Acceso denegado: solo el propietario puede forzar el cierre de sesión.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
       }
       
-      const body = await request.json() as { username: string };
-      if (!body.username) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const body = rawBody as { username?: string };
+      if (!body || typeof body !== 'object' || !body.username) {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
 
       const target = await getUser(body.username, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
@@ -174,8 +294,31 @@ export async function onRequest(context: any) {
     }
 
     if (request.method === 'POST' && action === 'change-password') {
-      const body = await request.json() as { current_password?: string; new_password?: string };
-      if (!body.current_password || !body.new_password) return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400 });
+      const ip = request.headers.get('cf-connecting-ip') ?? '127.0.0.1';
+      const limitRes = await checkRateLimit(getAuthRateLimit(env), `change-pw:${payload.sub}:${ip}`);
+      if (!limitRes.success) {
+        return new Response(JSON.stringify({ error: 'Demasiados intentos. Intenta más tarde.' }), { 
+          status: 429, 
+          headers: { 'Content-Type': 'application/json', 'X-RateLimit-Limit': limitRes.limit.toString(), 'X-RateLimit-Remaining': limitRes.remaining.toString() } 
+        });
+      }
+
+      let rawBody: unknown;
+      try {
+        rawBody = await request.json();
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const parseResult = ChangePasswordSchema.safeParse(rawBody);
+      if (!parseResult.success) {
+        return new Response(JSON.stringify({ error: parseResult.error.issues[0]?.message || 'Bad Request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const body = parseResult.data;
 
       const target = await getUser(payload.sub, env);
       if (!target) return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
@@ -191,6 +334,7 @@ export async function onRequest(context: any) {
     return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 });
 
   } catch (err: any) {
+    console.error('[Users API Error in action ' + action + ']:', err);
     if (err.message?.includes('Forbidden')) {
       return new Response(JSON.stringify({ error: err.message }), { status: 403 });
     }

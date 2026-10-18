@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -13,7 +13,7 @@ interface DomainAlertProps {
 
 export default function DomainAlert({ preview = false }: DomainAlertProps) {
   const { user } = useAuth();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   
   const parseLocalDate = (dateStr: string) => {
     if (!dateStr) return new Date();
@@ -33,16 +33,12 @@ export default function DomainAlert({ preview = false }: DomainAlertProps) {
   const expirationDateStr = settings?.expirationDate || settings?.domainExpirationDate;
   const monitoringActive = settings?.monitoringActive ?? settings?.domainAlertEnabled ?? true;
 
-  useEffect(() => {
-    if (expirationDateStr) {
-      const isDismissed = localStorage.getItem(`domain-alert-dismissed-${expirationDateStr}`);
-      if (isDismissed === 'true') {
-        setDismissed(true);
-      } else {
-        setDismissed(false);
-      }
-    }
-  }, [expirationDateStr]);
+  const isDismissed = Boolean(
+    expirationDateStr && (
+      dismissedKey === expirationDateStr ||
+      (typeof window !== 'undefined' && localStorage.getItem(`domain-alert-dismissed-${expirationDateStr}`) === 'true')
+    )
+  );
 
   if (!settings && !preview) return null;
   if (!expirationDateStr && !preview) return null;
@@ -53,7 +49,7 @@ export default function DomainAlert({ preview = false }: DomainAlertProps) {
   const diffTime = expiration.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  const shouldShowRealAlert = monitoringActive && diffDays <= 30 && diffDays > 0 && !dismissed;
+  const shouldShowRealAlert = monitoringActive && diffDays <= 30 && diffDays > 0 && !isDismissed;
 
   if (shouldShowRealAlert || preview) {
     return (
@@ -65,8 +61,8 @@ export default function DomainAlert({ preview = false }: DomainAlertProps) {
           onClose={!preview ? () => {
             if (expirationDateStr) {
               localStorage.setItem(`domain-alert-dismissed-${expirationDateStr}`, 'true');
+              setDismissedKey(expirationDateStr);
             }
-            setDismissed(true);
           } : undefined}
           sx={{ 
             bgcolor: '#FFF8E1', 

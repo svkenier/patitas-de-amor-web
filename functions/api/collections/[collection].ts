@@ -5,6 +5,18 @@ import type { BaseRecord, RecordUpsertBody, RecordDeleteBody } from '../../../sr
 import { cdnImageUrl, generateItemId } from '../../../src/core/github/github.js';
 import type { Env } from '../../../src/core/auth/auth.js';
 import { RecordUpsertSchema } from '../../../src/core/schema/collections.js';
+import { Ratelimit } from '@upstash/ratelimit';
+import { getRedis } from '../../../src/core/auth/kv.js';
+import { checkRateLimit } from '../../../src/core/auth/rate-limit.js';
+
+const ALLOWED_COLLECTIONS = new Set(['pets', 'announcements']);
+
+const getMutationRateLimit = (env: Env) => new Ratelimit({
+  redis: getRedis(env) as any,
+  limiter: Ratelimit.slidingWindow(30, '60 s'),
+  analytics: true,
+  prefix: '@upstash/ratelimit/collections_mutation',
+});
 
 const getCollectionPaths = (collection: string) => ({
   master: `data/${collection}.json`,
@@ -18,6 +30,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
 
+  if (!ALLOWED_COLLECTIONS.has(collectionName)) {
+    return new Response(JSON.stringify({ error: 'Colección no permitida' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   const paths = getCollectionPaths(collectionName);
 
   const payload = await getAuthPayload(request, env);
@@ -27,15 +46,47 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
+  // Rate limiting de mutaciones para proteger cuota de GitHub API
+  const ip = request.headers.get('cf-connecting-ip') ?? '127.0.0.1';
+  const mutationKey = `${payload.sub}:${ip}`;
+  const limitRes = await checkRateLimit(getMutationRateLimit(env), mutationKey);
+  if (!limitRes.success) {
+    return new Response(JSON.stringify({ error: 'Demasiadas solicitudes de guardado o eliminación. Intenta más tarde.' }), {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-RateLimit-Limit': limitRes.limit.toString(),
+        'X-RateLimit-Remaining': limitRes.remaining.toString(),
+      }
+    });
+  }
+
   if (request.method === 'POST' || request.method === 'PUT') return handleUpsert(request, env, paths, request.method === 'PUT');
-  if (request.method === 'DELETE') return handleDelete(request, env, paths);
+  if (request.method === 'DELETE') {
+    if (ROLE_LEVEL[payload.role as UserRole] < ROLE_LEVEL['voluntario']) {
+      return new Response(JSON.stringify({ error: 'Permiso insuficiente para eliminar registros' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    return handleDelete(request, env, paths);
+  }
 
   return new Response(JSON.stringify({ error: 'Método no permitido' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
 };
 
 async function handleUpsert(request: Request, env: Env, paths: any, isUpdate: boolean) {
+  let rawBody: unknown;
   try {
-    const rawBody = await request.json();
+    rawBody = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Cuerpo de petición JSON inválido' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
     const validationResult = RecordUpsertSchema.safeParse(rawBody);
     
     if (!validationResult.success) {
@@ -117,13 +168,23 @@ async function handleUpsert(request: Request, env: Env, paths: any, isUpdate: bo
 }
 
 async function handleDelete(request: Request, env: Env, paths: any) {
+  let rawBody: unknown;
   try {
-    const { id } = await request.json() as RecordDeleteBody;
-    if (!id) return new Response(JSON.stringify({ error: 'El campo id es requerido' }), { status: 400 });
+    rawBody = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Cuerpo de petición JSON inválido' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
+  const { id } = (rawBody as RecordDeleteBody) || {};
+  if (!id) return new Response(JSON.stringify({ error: 'El campo id es requerido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  try {
     const collection = await getCollection<BaseRecord>(paths.master, env);
     const record = collection.find(p => p.id === id);
-    if (!record) return new Response(JSON.stringify({ error: 'Registro no encontrado' }), { status: 404 });
+    if (!record) return new Response(JSON.stringify({ error: 'Registro no encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
 
     const imagesToDelete: string[] = [];
     if (record.main_image) imagesToDelete.push(record.main_image);
