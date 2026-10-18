@@ -24,6 +24,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Navbar from '@ui/components/Navbar';
 import Footer from '@ui/components/Footer';
 import AnimatedSection from '@ui/components/AnimatedSection';
+import { ErrorBoundary, CompactErrorFallback } from '@ui/components/ErrorBoundary';
 import SEO from '@core/media/SEO';
 
 // ─── Code Splitting Below-the-Fold ───────────────────────────────────────────
@@ -224,14 +225,38 @@ export default function Home() {
       </Box>
 
       {/* ── Eventos y Anuncios (Lazy) ────────────────────────────────────────── */}
-      <Suspense fallback={<Box sx={{ minHeight: { xs: '80px', md: '120px' } }} />}>
-        <AnnouncementsSection />
-      </Suspense>
+      <ErrorBoundary
+        fallbackRender={({ error, resetErrorBoundary }) => (
+          <CompactErrorFallback
+            error={error}
+            resetErrorBoundary={resetErrorBoundary}
+            minHeight={{ xs: '80px', md: '120px' }}
+            title="No pudimos cargar los anuncios"
+            message="Ocurrió un inconveniente temporal al cargar los anuncios y eventos."
+          />
+        )}
+      >
+        <Suspense fallback={<Box sx={{ minHeight: { xs: '80px', md: '120px' } }} />}>
+          <AnnouncementsSection />
+        </Suspense>
+      </ErrorBoundary>
 
       {/* ── Mascotas en busca de hogar (Lazy Carrusel) ───────────────────────── */}
-      <Suspense fallback={<Box sx={{ minHeight: { xs: '450px', md: '550px' } }} />}>
-        <FeaturedPetsSection />
-      </Suspense>
+      <ErrorBoundary
+        fallbackRender={({ error, resetErrorBoundary }) => (
+          <CompactErrorFallback
+            error={error}
+            resetErrorBoundary={resetErrorBoundary}
+            minHeight={{ xs: '450px', md: '550px' }}
+            title="No pudimos cargar las mascotas destacadas"
+            message="Ocurrió un detalle temporal con el carrusel de mascotas. Puedes reintentar sin recargar toda la página."
+          />
+        )}
+      >
+        <Suspense fallback={<Box sx={{ minHeight: { xs: '450px', md: '550px' } }} />}>
+          <FeaturedPetsSection />
+        </Suspense>
+      </ErrorBoundary>
 
       {/* ── Cómo funciona ────────────────────────────────────────────────────── */}
       <Box component="section" sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid rgba(30, 31, 32, 0.06)' }}>
@@ -328,9 +353,21 @@ export default function Home() {
           </AnimatedSection>
 
           <AnimatedSection delay={80}>
-            <Suspense fallback={<Box sx={{ minHeight: { xs: '350px', md: '400px' } }} />}>
-              <ContactSection />
-            </Suspense>
+            <ErrorBoundary
+              fallbackRender={({ error, resetErrorBoundary }) => (
+                <CompactErrorFallback
+                  error={error}
+                  resetErrorBoundary={resetErrorBoundary}
+                  minHeight={{ xs: '350px', md: '400px' }}
+                  title="No pudimos cargar los canales de contacto"
+                  message="Ocurrió un inconveniente temporal al conectar con los canales de atención."
+                />
+              )}
+            >
+              <Suspense fallback={<Box sx={{ minHeight: { xs: '350px', md: '400px' } }} />}>
+                <ContactSection />
+              </Suspense>
+            </ErrorBoundary>
           </AnimatedSection>
         </Container>
       </Box>
